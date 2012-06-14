@@ -1,37 +1,32 @@
 import re
 
-import Translator
+from translator import Translator
 
 class Txt2Tags(Translator):
 
+    def __init__(self):
+        print('Txt2Tags constructor')
+        super().__init__()
+
     tokens = (
-        'TYPE',
-        'ID',
-        'NAME',
-        'VALUE',
-        'EQ',
-        'COMMA',
+        'PLAIN',
     )
 
-    states = (
-        ('dummystat', 'inclusive'),
-    )
+#    states = (
+#        ('dummystat', 'inclusive'),
+#    )
     
-    # literaly, ktore nie zmienia stanu
-    literals = ['@', '{', ',', '}']
+#    # literaly, ktore nie zmienia stanu
+#    literals = ['@', '{', ',', '}']
 
-    # typ publikacji -> pierwszy token
-    def t_INITIAL_TYPE(self, t):
-        '''\w+'''
-        t.lexer.begin('idstat')
-        return t
+    t_PLAIN = r'.*?'
 
-    # id
-    def t_idstat_ID(self, t):
-        '''\w+(?=,)'''
-        t.lexer.begin('namestat')
-        return t
-        
+#    # typ publikacji -> pierwszy token
+#    def t_INITIAL_TYPE(self, t):
+#        '''\w+'''
+#        t.lexer.begin('idstat')
+#        return t
+    
     # glowne
     ## TODO nie wiem czy to potrzebne?
     def p_document(self, p):
@@ -44,9 +39,10 @@ class Txt2Tags(Translator):
     def p_text(self, p):
         '''
         text    : text formatted
+            | text PLAIN
         '''
-        p[0] = p[1]
-        
+        p[0] = p[1] + p[2]
+    
     def p_text_empty(self, p):
         '''
         text    :

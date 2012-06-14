@@ -6,7 +6,8 @@ class Translator(object):
     precedence = ()
     debug = 0
     
-    def __init__(self, **kw):
+    def __init__(self):
+        print('Translator constructor')
         self.my_lex = lex.lex(module=self, debug=self.debug)
         self.my_yacc = yacc.yacc(module=self, debug=self.debug)
     

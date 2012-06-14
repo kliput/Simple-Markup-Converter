@@ -1,6 +1,6 @@
 import re
 
-import Translator
+import translator
 
 class ExampleTranslator(Translator):
 

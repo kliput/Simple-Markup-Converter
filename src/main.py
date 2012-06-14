@@ -18,7 +18,7 @@
 import sys
 import ply.lex as lex
 
-import Txt2Tags
+from txt2tags import Txt2Tags
 
 if __name__ == '__main__':
         try:
@@ -30,8 +30,10 @@ if __name__ == '__main__':
         text = f.read()
         
         input_parser = Txt2Tags()
+        
         try:
-            input_parser.run(text)
+            output = input_parser.run(text)
         except lex.LexError as e:
             print("Parsing error:", e)
-
+        else:
+            print(output);
