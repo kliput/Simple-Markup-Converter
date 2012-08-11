@@ -3,19 +3,17 @@
 from .translator import Translator
 import logging
 
-#import re
-
-class Txt2TagsOutput(Translator):
-    pass
-
-class Txt2TagsInput(Translator):
-
+class PassTranslator(Translator):
+    '''
+    Pusty translator, który zwraca ten sam tekst, który otrzymał.
+    '''
+    
     log = logging.getLogger(__name__)
 
     output = ''
 
     def __init__(self):
-        self.log.debug('Txt2Tags constructor')
+        self.log.debug('PassTranslator constructor')
         super().__init__()
     
 
@@ -23,10 +21,8 @@ class Txt2TagsInput(Translator):
         'PLAIN_TEXT',
     )
     
-#    literals = ['\n']
-
     t_PLAIN_TEXT = r'(.|\n)+'
-
+    
 
     def p_text(self, p):
         '''
@@ -34,4 +30,3 @@ class Txt2TagsInput(Translator):
         '''
         p[0] = p[1]
         self.output = p[0]
-
