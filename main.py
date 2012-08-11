@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# -*- coding: utf-8 -*-
+
 # Copyright (C) 2012 Jakub Liput, Mirosław Sajdak
 #
 # SimpleMarkupConverter is free software: you can redistribute it and/or modify
@@ -15,10 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with SimpleMarkupConverter.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
+from translator.txt2tags import Txt2Tags
 import ply.lex as lex
+import sys
 
-from txt2tags import Txt2Tags
 
 if __name__ == '__main__':
         try:

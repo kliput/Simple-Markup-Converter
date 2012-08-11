@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
+
+from .translator import Translator
 import re
 
-import translator
 
 class ExampleTranslator(Translator):
 

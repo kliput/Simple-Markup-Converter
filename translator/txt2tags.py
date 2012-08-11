@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
+
+from .translator import Translator
 import re
 
-from translator import Translator
 
 class Txt2Tags(Translator):
 
