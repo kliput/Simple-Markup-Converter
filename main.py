@@ -17,9 +17,11 @@
 # You should have received a copy of the GNU General Public License
 # along with SimpleMarkupConverter.  If not, see <http://www.gnu.org/licenses/>.
 
-from translator.txt2tags import Txt2TagsInput, Txt2TagsOutput
-from translator.dummy import PassTranslator
+#from translator.txt2tags import Txt2TagsInput, Txt2TagsOutput
 from ply import lex, yacc
+from translator.dummy import PassTranslator
+from translator.hello import HelloTranslator
+import logging
 import sys
 
 # stałe kierunku translacji
@@ -31,7 +33,9 @@ translator_map = {
 #                  "txt2tags":
 #                  {IN: Txt2TagsInput, OUT: Txt2TagsInput },
                   "dummy":
-                  {IN: PassTranslator, OUT: PassTranslator }
+                  {IN: PassTranslator, OUT: PassTranslator },
+                  "hello":
+                  {IN: HelloTranslator},
                 }
 
 if __name__ == '__main__':
@@ -41,6 +45,8 @@ if __name__ == '__main__':
         # -iformat kod_formatu_wejściowego
         # -oformat kod_formaty_wyjściowego
         # kody: txt2tags, textile, dokuwiki, html (tylko wyjściowe)
+        
+        logging.basicConfig(format='%(levelname)s[%(name)s]: %(message)s', level=logging.DEBUG)
         
         # otworzenie pliku z parametru
         try:
@@ -59,7 +65,7 @@ if __name__ == '__main__':
         # TODO: wczytanie z linii komend
         # wybór odpowiednich translatorów wejściowych/wyjściowych
         file_format = {}
-        file_format[IN] = "dummy"
+        file_format[IN] = "hello"
         file_format[OUT] = "dummy"
         
         translator = {}
@@ -73,11 +79,10 @@ if __name__ == '__main__':
         except KeyError:
             print("Wrong %s format specified: %s" % (direction, file_format[direction]))
             exit(2)
-        except SyntaxError as e:
+            # TODO: dawna obsługa, która jest bardziej szczegółowa
+#        except (SyntaxError, yacc.LALRError) as e:
+        except Exception as e:
             # błąd w konstrukcji translatora
-            print("Construction of %s parser %s failed: %s" % (direction, translator_type.__name__, e))
-            exit(4)
-        except yacc.LALRError as e:
             print("Construction of %s parser %s failed: %s" % (direction, translator_type.__name__, e))
             exit(4)
             
@@ -91,7 +96,7 @@ if __name__ == '__main__':
         except lex.LexError as e:
             print("Translation %s lexer error: %s" % (direction, e))
         except Exception as e:
-            print("Error: %s" % str(e))
+            print("Error: %s" % (e))
         
         # zakończono niepowodzeniem
         exit(3)
