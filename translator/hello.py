@@ -12,12 +12,15 @@ class HelloTranslator(Translator):
     
     tokens = (
         'WORD',
+        'PAREND',
     )
     
     # ciąg zwartych znaków
-    t_WORD = r'[\w\~\`\!\@\#\$\%\^\&\*\(\)\-\+\[\]\{\}\:\;\"\'\<\>\?\,\.\/\|\\]+'
+    t_WORD = r'[\w\~\`\!\@\#\$\%\^\&\*\(\)\-\+\[\]\{\}\:\;\"\'\<\>\?\,\.\/\|\\]+\n??'
 
-    t_ignore = ' \t\n'
+    t_PAREND = '\\n{2,}'
+
+    t_ignore = ' \t'
     
 #    def t_NL_ONE(self, t):
 #        r'\n'
@@ -27,49 +30,57 @@ class HelloTranslator(Translator):
 #        r'\n\n'
 #        self.log.debug("newline two")
 
+    def p_document_multi(self, p):
+        '''
+        document    : document PAREND paragraph
+        '''
+        self.log.debug('document: document (%s)  PAREND paragraph (%s)' % (p[1], p[3]))
+        p[0] = '%s <p>%s</p>' % (p[1], p[3])
+    
     def p_document(self, p):
         '''
-        document    : document paragraph
+        document    : paragraph
         '''
-        self.log.debug('document    : document paragraph')
-        p[0] = p[1] + p[2]
-        
+        self.log.debug('document: paragraph (%s)' % (p[1]))
+        p[0] = '<p>%s</p>' % p[1]
+    
+    # dokument może być w ogóle pusty
     def p_document_blank(self, p):
         '''
         document    : 
         '''
-        self.log.debug("document blank")
+        self.log.debug("(document blank)")
         p[0] = ''
         
     # akapit zawierający więcej elementów
     def p_paragraph(self, p):
         '''
-        paragraph   : paragraph element '\\n' '\\n'
+        paragraph   : paragraph element
         '''
-        self.log.debug('paragraph paragraph element') 
-        p[0] = p[0] + p[1]
+        self.log.debug('paragraph: paragraph (%s) element (%s)' % (p[1], p[2])) 
+        p[0] = p[1] + p[2]
         
     # ostatni bądź jedyny element w akapicie
     def p_paragraph_last_element(self, p):
         '''
         paragraph    : element
         '''
-        self.log.debug('paragraph element')
-        p[0] = p[1]
-        
+        self.log.debug('paragraph: element (%s)' % (p[1]))
+        p[0] = p[1]    
+    
     ## TODO element
     def p_element(self, p):
         '''
         element    : plain 
         '''
-        self.log.debug('element plain')
+        self.log.debug('element: plain (%s)' % (p[1]))
         p[0] = p[1]
         
     def p_plain(self, p):
         '''
         plain    : plain WORD
         '''
-        self.log.debug('plain WORD: %s' % p[2])
+        self.log.debug('plain: plain (%s) WORD (%s)' % (p[1], p[2]))
         # między dwoma ciągami znaków jest zawsze pojedyncza spacja
         p[0] = p[1] + ' ' + p[2]
         
@@ -77,6 +88,6 @@ class HelloTranslator(Translator):
         '''
         plain    : WORD
         '''
-        self.log.debug('plain last word: %s' % p[1])
+        self.log.debug('plain: WORD (%s)' % p[1])
         p[0] = p[1]
     
