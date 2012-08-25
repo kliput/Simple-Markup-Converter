@@ -13,10 +13,13 @@ class HelloTranslator(Translator):
     tokens = (
         'WORD',
         'PAREND',
+        'NEWLINE',
     )
     
     # ciąg zwartych znaków
     t_WORD = r'[\w\~\`\!\@\#\$\%\^\&\*\(\)\-\+\[\]\{\}\:\;\"\'\<\>\?\,\.\/\|\\]+\n??'
+
+    t_NEWLINE = '\\n'
 
     t_PAREND = '\\n{2,}'
 
@@ -60,6 +63,14 @@ class HelloTranslator(Translator):
         self.log.debug('paragraph: paragraph (%s) element (%s)' % (p[1], p[2])) 
         p[0] = p[1] + p[2]
         
+    # akapit zawierający więcej elementów przedzielone pojedynczym znakiem nowej linii
+    def p_paragraph_wnl(self, p):
+        '''
+        paragraph   : paragraph NEWLINE element
+        '''
+        self.log.debug('paragraph: paragraph (%s) NEWLINE element (%s)' % (p[1], p[3])) 
+        p[0] = p[1] + '\n' + p[3]
+        
     # ostatni bądź jedyny element w akapicie
     def p_paragraph_last_element(self, p):
         '''
@@ -67,7 +78,7 @@ class HelloTranslator(Translator):
         '''
         self.log.debug('paragraph: element (%s)' % (p[1]))
         p[0] = p[1]    
-    
+        
     ## TODO element
     def p_element(self, p):
         '''

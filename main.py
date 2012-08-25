@@ -17,28 +17,56 @@
 # You should have received a copy of the GNU General Public License
 # along with SimpleMarkupConverter.  If not, see <http://www.gnu.org/licenses/>.
 
-#from translator.txt2tags import Txt2TagsInput, Txt2TagsOutput
 from ply import lex, yacc
 from translator.dummy import PassTranslator
 from translator.hello import HelloTranslator
+from translator.txt2tags import Txt2TagsToXML
 import logging
 import sys
 
-# stałe kierunku translacji
-IN = "input"
-OUT = "output"
+class Exit(object):
+    SUCCESS = 0
+    FILE_ERROR = 1
+    WRONG_CMD = 2
+    TRANSLATION_ERROR = 3
+    PARSER_CONSTRUCTION_FAIL = 4
+    
+    
+class SimpleMarkupConverter(object):
 
-# przechowuje odwzorowanie kodu_<input/output> -> klasa translatora
-translator_map = {
-#                  "txt2tags":
-#                  {IN: Txt2TagsInput, OUT: Txt2TagsInput },
-                  "dummy":
-                  {IN: PassTranslator, OUT: PassTranslator },
-                  "hello":
-                  {IN: HelloTranslator},
-                }
+    # czy obiekt ma przechowywać tekst wyjściowy po start()?
+    store_output = False
+    
+    # przechowywany tekst wyjściowy jeśli store_output == true
+    output = ''
 
-if __name__ == '__main__':
+    def __init__(self, **kwargs):
+        self.log = logging.getLogger(self.__class__.__name__)
+        logging.basicConfig(format='%(levelname)s[%(name)s]: %(message)s', level=logging.DEBUG)
+        
+        if 'store_output' in kwargs:
+            self.store_output = True
+            self.log.debug('store_output turned on')
+
+    def get_output(self):
+        if self.store_output:
+            return self.output
+
+    # stałe kierunku translacji
+    IN = "input"
+    OUT = "output"
+    
+    # przechowuje odwzorowanie kodu_<input/output> -> klasa translatora
+    translator_map = {
+                      "dummy":
+                      {IN: PassTranslator, OUT: PassTranslator },
+                      "hello":
+                      {IN: HelloTranslator},
+                      "txt2tags":
+                      {IN: Txt2TagsToXML},
+                    }
+    
+    def start(self, argv):
         # TODO: parametry wywołania - parsing:
         # ./smc [-o output_file] --iformat=code_input --oformat=code_output input_file
         # -o plik wyjściowy (opcjonalne, może wypisać na stdout)
@@ -46,59 +74,65 @@ if __name__ == '__main__':
         # -oformat kod_formaty_wyjściowego
         # kody: txt2tags, textile, dokuwiki, html (tylko wyjściowe)
         
-        logging.basicConfig(format='%(levelname)s[%(name)s]: %(message)s', level=logging.DEBUG)
-        
         # otworzenie pliku z parametru
         try:
-            f = open(sys.argv[1], "r")
+            f = open(argv, "r")
         except Exception as e:
             print("File open error: %s" % str(e))
-            exit(1)
+            return Exit.FILE_ERROR
         
         # odczyt pliku
         try:
             text = f.read()
         except Exception as e:
             print("File read error: %s" % str(e))
-            exit(1)
+            return Exit.FILE_ERROR
         
         # TODO: wczytanie z linii komend
         # wybór odpowiednich translatorów wejściowych/wyjściowych
         file_format = {}
-        file_format[IN] = "hello"
-        file_format[OUT] = "dummy"
+        file_format[self.IN] = "txt2tags"
+        file_format[self.OUT] = "dummy"
         
         translator = {}
         
         # TODO: można obsłużyć gdy jest translator, ale w nie w tą stronę
         try:
             # wyszukanie w mapie odpowiednich translatorów we/wy i ich konstrukcja
-            for direction in [IN, OUT]:
-                translator_type = translator_map[file_format[direction]][direction]
+            for direction in [self.IN, self.OUT]:
+                translator_type = self.translator_map[file_format[direction]][direction]
                 translator[direction] = translator_type()
         except KeyError:
             print("Wrong %s format specified: %s" % (direction, file_format[direction]))
-            exit(2)
+            return Exit.WRONG_CMD
             # TODO: dawna obsługa, która jest bardziej szczegółowa
 #        except (SyntaxError, yacc.LALRError) as e:
         except Exception as e:
             # błąd w konstrukcji translatora
             print("Construction of %s parser %s failed: %s" % (direction, translator_type.__name__, e))
-            exit(4)
+            return Exit.PARSER_CONSTRUCTION_FAIL
             
         try:
             # wywoływanie kolejnych translatorów
-            for direction in [IN, OUT]:
+            for direction in [self.IN, self.OUT]:
                 text = translator[direction].run(text)
             # TODO: możliwy tryb wyjścia do pliku
             print(text)
-            exit(0)
+            
+            if self.store_output:
+                self.output = text
+            
+            return Exit.SUCCESS
         except lex.LexError as e:
             print("Translation %s lexer error: %s" % (direction, e))
         except Exception as e:
             print("Error: %s" % (e))
         
         # zakończono niepowodzeniem
-        exit(3)
-        
-        
+        return Exit.TRANSLATION_ERROR
+
+# program główny
+if __name__ == '__main__':
+    # uruchomienie procedury głównej z podanymi argumentami
+    SimpleMarkupConverter().start(' '.join(sys.argv[1:]))
+
