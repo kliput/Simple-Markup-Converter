@@ -26,4 +26,7 @@ class Translator(object):
         self.my_yacc = yacc.yacc(module=self, debug=self.debug)
     
     def run(self, text):
-        return self.my_yacc.parse(input=text, lexer=self.my_lex, debug=self.debug)
+        if text == '':
+            return ''
+        else:
+            return self.my_yacc.parse(input=text, lexer=self.my_lex, debug=self.debug)

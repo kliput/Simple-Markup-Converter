@@ -49,8 +49,7 @@ class SimpleMarkupConverter(object):
             self.log.debug('store_output turned on')
 
     def get_output(self):
-        if self.store_output:
-            return self.output
+        return self.output
 
     # stałe kierunku translacji
     IN = "input"
@@ -116,6 +115,10 @@ class SimpleMarkupConverter(object):
             # wywoływanie kolejnych translatorów
             for direction in [self.IN, self.OUT]:
                 text = translator[direction].run(text)
+            
+            if text == None:
+                raise Exception("None parser output")
+                
             # TODO: możliwy tryb wyjścia do pliku
             print(text)
             

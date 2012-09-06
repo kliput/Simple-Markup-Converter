@@ -5,6 +5,12 @@ class Txt2TagsToXML(Translator):
     Translator txt2tags -> XML (języka wewnętrznego)
     '''
     
+    # Mapa otwartych znaczników formatowania.
+    # Znaczniki tego samego typu nie mogą się zagnieżdżać.
+    format = {
+              'bold': False, # pojawił się początek bold
+              }
+    
     def __init__(self):
         super().__init__()
         self.log.debug('%s constructor' % self.__class__.__name__)
@@ -13,41 +19,63 @@ class Txt2TagsToXML(Translator):
     tokens = (
         'PAREND',
         'NEWLINE',
-#        'BOLD_START',
-#        'BOLD_END',
+        'BOLD_S',
+        'BOLD_E',
         'WORD',
-        'BOLD',
     )
     
-    t_ignore = ' \t'
+    states = (
+        ('bs', 'inclusive'), # bold started
+        ('be', 'exclusive'), # bold end - można wykryć zamykanie bold
+    )
     
-#    char_set = r'\w\~\`\!\@\#\$\%\^\&\*\(\)\-\+\[\]\{\}\:\;\"\'\<\>\?\,\.\/\|\\'
+    t_ANY_ignore = ' \t'
     
-    # ciąg zwartych znaków
-    t_WORD = r'[^\s]+'
-    
-    def t_BOLD_START(self, t):
+    # znacznik rozpoczynający pogrubienie: **<znak>
+    def t_BOLD_S(self, t):
         r'\*\*(?=[^\s])'
-        self.log.debug('BOLD START token: ' + t.value)
+        # sprawdzenie, czy już został otwarty znacznik **
+        # można używać stosu stanów, ale to bardziej skomplikowane
+        if not self.format['bold']:
+            # jeśli nie - ustawienie tej flagi oraz stanu
+            self.format['bold'] = True
+            t.lexer.push_state('bs')
+            # i normalne zwrócenie tokenu
+            self.log.debug('BOLD_S token: ' + t.value)
+            return t
+        else:
+            # jeśli tak - pominięcie go
+            self.log.debug('BOLD_S skip: ' + t.value)
+            
+    
+    # Znacznik kończący bold, musi go poprzedzać jakiś znak.
+    # Nie można wykonać "positive lookbehind" gdyż poprzedni znak należy
+    # do jakiegoś innego tokena. W tym celu używa się flagi format['bold'].  
+    def t_be_BOLD_E(self, t):
+        r'\*\*'
+        # zdjęcie stanu be - koniec bold
+        t.lexer.pop_state()
+        # koniec bloku bold - można parsować kolejny początek bold
+        self.format['bold'] = False
+        self.log.debug('t_be_BOLD_E: ' + t.value)
         return t
 
-    def t_BOLD_END(self, t):
-        r'(?<=[^\s])\*\*'
-#        r'\**\*\*'
-        self.log.debug('BOLD END token: ' + t.value)
+    # Szukamy pierwszego wystąpienia podwójnych gwiazdek, 
+    # które są poprzedzone przynajmniej jednym dowolnym znakiem.
+    # Gwiazdek nie bierzemy do wyniku wyrażenia regularnego
+    # - będą użyte przy pobraniu taga zamykającego.
+    def t_bs_WORD(self, t):
+        r'[^\s]+?(?=\*\*)'
+        # lexer gotowy na pobranie znaków zamykających bold
+        t.lexer.begin('be')
+        self.log.debug('WORD ending bold token: ' + t.value)
         return t
-    
-    # TODO jest to pewne rozwiązanie, ale w kontekście całości - źle
-#    def t_BOLD(self, t):
-#        r'\*\*([^\s](|.*?[^\s])\**)\*\*'
-#        self.log.debug('BOLD TOKEN: ' + t.value)
-#        t.value = '<b>%s</b>' % t.value
-#        return t
-    
-#    def t_WORD(self, t):
-#        r'[^\s]+(?<!\*)'
-#        self.log.debug('WORD token: ' + t.value)
-#        return t
+
+    # słowo wykrywane we wszystkich trybach
+    def t_WORD(self, t):
+        r'[^\s]+'
+        self.log.debug('WORD normal token: ' + t.value);
+        return t
 
     # 1 znak nowej linii - może pojawić się w ramach akapitu
     t_NEWLINE = '\\n'
@@ -58,11 +86,7 @@ class Txt2TagsToXML(Translator):
 #    t_BOLD_START = r'\*\*(?=[^\s])' 
 #    t_BOLD_END = r'(?<=[^\s])\*\*'
     
-    
-#    precedence = (
-#        ('right', 'BOLD_END'),
-#    )
-    
+        
     # dokument z wieloma akapitami
     def p_document_multi(self, p):
         '''
@@ -111,7 +135,7 @@ class Txt2TagsToXML(Translator):
         paragraph_content   : paragraph_content element
         '''
         self.log.debug('paragraph_content: paragraph_content (%s) element (%s)' % (p[1], p[2])) 
-        p[0] = p[1] + p[2]
+        p[0] = p[1] + ' ' + p[2]
         
     # akapit zawierający więcej elementów przedzielone pojedynczym znakiem nowej linii
     def p_paragraph_content_wnl(self, p):
@@ -119,7 +143,7 @@ class Txt2TagsToXML(Translator):
         paragraph_content   : paragraph_content element NEWLINE
         '''
         self.log.debug('paragraph_content: paragraph_content (%s) element (%s) NEWLINE' % (p[1], p[2])) 
-        p[0] = p[1] + p[2] + '\n'
+        p[0] = p[1] + ' ' + p[2] + '\n'
 
     # TODO co to jest?
     # akapit zawierający więcej elementów przedzielone pojedynczym znakiem nowej linii
@@ -129,20 +153,19 @@ class Txt2TagsToXML(Translator):
         '''
         p[0] = ''
         
-    ## TODO element
     def p_element(self, p):
         '''
         element    : plain 
-                    | BOLD
+                    | bold
         '''
         self.log.debug('element: (...) (%s)' % (p[1]))
         p[0] = p[1]
         
-#    def p_bold(self, p):
-#        '''
-#        bold    : BOLD_START plain BOLD_END
-#        '''
-#        p[0] = '<b>%s</b>' % p[2]
+    def p_bold(self, p):
+        '''
+        bold    : BOLD_S plain BOLD_E
+        '''
+        p[0] = '<b>%s</b>' % p[2]
         
     def p_plain(self, p):
         '''
