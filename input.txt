@@ -1,5 +1,1 @@
-lorem1 **ipsum1 sit1** dolor1 amet1
-
-lorem2 ** ipsum2 sit2** dolor2 amet2
-
-lorem3 **ipsum3 sit3 ** dolor3** amet3
+**lorem1** //ipsum1 sit1// dolor1 amet1

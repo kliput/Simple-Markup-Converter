@@ -66,5 +66,9 @@ class SimpleMarkupConverterTests(unittest.TestCase):
                                 re.findall(r'\<b\>\s*sit\s*dolor\s*\<\/b\>', 
                                            smc.get_output())))
 
+    # TODO test zagnieżdżania bold w bold (ma być fail)
+    # TODO test zagnieżdżania różnych typów tagów
+    # TODO test mieszanego zagnieżdżania (BIBbib)
+
 if __name__ == '__main__':
     unittest.main()
