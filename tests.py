@@ -66,6 +66,17 @@ class SimpleMarkupConverterTests(unittest.TestCase):
                                 re.findall(r'\<b\>\s*sit\s*dolor\s*\<\/b\>', 
                                            smc.get_output())))
 
+    # formatowanie zagnieżdżone (bold<-italic)
+    def test_t2t_formats1(self):
+        smc = SimpleMarkupConverter(input='**lorem //ipsum sit// dolor** amet')
+        smc.parse()
+        rx = re.compile(r'''
+        \<b\> \s* lorem \s* \<i\> \s* ipsum \s* sit \s* \<\/i\> \s* dolor \s* \<\/b\> \s* amet 
+        ''',  re.VERBOSE)
+        self.assertEqual(1, len(
+                                rx.findall(smc.get_output())
+                                ))
+
     # TODO test zagnieżdżania bold w bold (ma być fail)
     # TODO test zagnieżdżania różnych typów tagów
     # TODO test mieszanego zagnieżdżania (BIBbib)

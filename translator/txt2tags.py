@@ -149,35 +149,29 @@ class Txt2TagsToXML(Translator):
         '''
         paragraph    : paragraph_content
         '''
+        self.log.debug('par %s' % p[1])
         p[0] = '<p>%s</p>' % p[1]
         
     def p_paragraph_blank(self, p):
         '''
         paragraph    : 
         '''
+        self.log.debug('par BLANK')
         p[0] = ''
         
-#    def p_paragraph_content_blank(self, p):
-#        '''
-#        paragraph_content    :
-#        '''
-#        p[0] = ''
-    
     # akapit zawierający więcej elementów
     def p_paragraph_content(self, p):
         '''
-        paragraph_content   : paragraph_content element
+        paragraph_content   : paragraph_content line_content
         '''
-        self.log.debug('paragraph_content: paragraph_content (%s) element (%s)' % (p[1], p[2])) 
-        p[0] = p[1] + ' ' + p[2]
+        p[0] = p[1] + p[2]
         
     # akapit zawierający więcej elementów przedzielone pojedynczym znakiem nowej linii
     def p_paragraph_content_wnl(self, p):
         '''
-        paragraph_content   : paragraph_content element NEWLINE
+        paragraph_content   : paragraph_content line_content NEWLINE
         '''
-        self.log.debug('paragraph_content: paragraph_content (%s) element (%s) NEWLINE' % (p[1], p[2])) 
-        p[0] = p[1] + ' ' + p[2] + '\n'
+        p[0] = p[1] + p[2] + '\n'
 
     # TODO co to jest?
     # akapit zawierający więcej elementów przedzielone pojedynczym znakiem nowej linii
@@ -185,7 +179,23 @@ class Txt2TagsToXML(Translator):
         '''
         paragraph_content   : 
         '''
+        self.log.debug('line_content BLANK')
         p[0] = ''
+        
+    # zawartość pojedynczej linii (wiele elementów)
+    def p_line_content(self, p):
+        '''
+        line_content   : line_content element
+        '''
+        
+        p[0] = p[1] + ' ' + p[2]
+        
+    def p_line_content_blank(self, p):
+        '''
+        line_content    : element
+        '''
+        self.log.debug('lc (single) %s' % (p[1]))
+        p[0] = p[1]
         
     def p_element(self, p):
         '''
@@ -198,13 +208,13 @@ class Txt2TagsToXML(Translator):
         
     def p_bold(self, p):
         '''
-        bold    : BOLD_S element BOLD_E
+        bold    : BOLD_S line_content BOLD_E
         '''
         p[0] = '<b>%s</b>' % p[2]
 
     def p_italic(self, p):
         '''
-        italic    : ITALIC_S element ITALIC_E
+        italic    : ITALIC_S line_content ITALIC_E
         '''
         p[0] = '<i>%s</i>' % p[2]
         
