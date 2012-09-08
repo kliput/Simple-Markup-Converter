@@ -98,7 +98,21 @@ class SimpleMarkupConverterTests(unittest.TestCase):
         self.assertEqual(1, len(
                                 rx.findall(smc.get_output())
                                 ))
-    
+    def test_t2t_head2(self):
+        smc = SimpleMarkupConverter(input='= lorem ipsum =\n==== sit dolor ====')
+        smc.parse()
+        r1 = re.compile(r'''
+        \<h1\>\s*lorem\s+ipsum\s*\<\/h1\>
+        ''', re.VERBOSE)
+        self.assertEqual(1, len(
+                                r1.findall(smc.get_output())
+                                ))
+        r4 = re.compile(r'''
+        \<h4\>\s*sit\s+dolor\s*\<\/h4\>
+        ''', re.VERBOSE)
+        self.assertEqual(1, len(
+                                r4.findall(smc.get_output())
+                                ))
 
 if __name__ == '__main__':
     unittest.main()

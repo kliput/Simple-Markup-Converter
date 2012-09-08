@@ -36,7 +36,11 @@ class Txt2TagsToXML(Translator):
         ('is', 'inclusive'), # italic started
         ('us', 'inclusive'), # underline started
         ('tagend', 'exclusive'), # gotowość do parsowana taga zamykającego formatowanie
-        ('head', 'exclusive'), # nagłówek
+        ('head1', 'exclusive'), # nagłówek
+        ('head2', 'exclusive'), # nagłówek
+        ('head3', 'exclusive'), # nagłówek
+        ('head4', 'exclusive'), # nagłówek
+        ('head5', 'exclusive'), # nagłówek
     )
     
     t_ANY_ignore = ' \t'
@@ -139,16 +143,49 @@ class Txt2TagsToXML(Translator):
     # --- HEADING ---
 
     def t_HEADING_S(self, t):
-        r'='
-        t.lexer.push_state('head')
+        r'={1,5}'
+        lvl = t.value.count('=')
+        t.lexer.push_state('head%s' % str(lvl))
+        t.value = '<h%s>' % str(lvl)
         self.log.debug('H>')
         return t
-   
-    def t_head_HEADING_E(self, t):
+    
+    def t_head1_HEADING_E(self, t):
         r'='
         t.lexer.pop_state()
-        self.log.debug('<H')
+        t.value = '</h1>'
+        self.log.debug('<H1')
         return t
+
+    def t_head2_HEADING_E(self, t):
+        r'=='
+        t.lexer.pop_state()
+        t.value = '</h2>'
+        self.log.debug('<H2')
+        return t
+
+    def t_head3_HEADING_E(self, t):
+        r'==='
+        t.lexer.pop_state()
+        t.value = '</h3>'
+        self.log.debug('<H3')
+        return t
+
+    def t_head4_HEADING_E(self, t):
+        r'===='
+        t.lexer.pop_state()
+        t.value = '</h4>'
+        self.log.debug('<H4')
+        return t
+    
+    def t_head5_HEADING_E(self, t):
+        r'====='
+        t.lexer.pop_state()
+        t.value = '</h5>'
+        self.log.debug('<H5')
+        return t
+
+
 
     # --- WORD ---
 
@@ -251,7 +288,7 @@ class Txt2TagsToXML(Translator):
         '''
         heading    : HEADING_S plain HEADING_E
         '''
-        p[0] = '<h1>%s</h1>' % p[2]
+        p[0] = '%s%s%s' % (p[1], p[2], p[3])
         
     def p_line_content_head(self, p):
         '''
@@ -264,7 +301,6 @@ class Txt2TagsToXML(Translator):
         '''
         line_content   : line_content element
         '''
-        
         p[0] = p[1] + ' ' + p[2]
     
     # zawartość pojedynczej linii - ostatni element
