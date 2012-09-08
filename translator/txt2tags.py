@@ -1,4 +1,5 @@
 from translator.translator import Translator
+import re
 
 class Txt2TagsToXML(Translator):
     '''
@@ -15,16 +16,17 @@ class Txt2TagsToXML(Translator):
         'NEWLINE',
         'BOLD_S',
         'BOLD_E',
+        'BOLD_E_I',
         'ITALIC_S',
         'ITALIC_E',
+        'ITALIC_E_B',
         'WORD',
     )
     
     states = (
         ('bs', 'inclusive'), # bold started
-        ('be', 'exclusive'), # bold end - można wykryć zamykanie bold
         ('is', 'inclusive'), # italic started
-        ('ie', 'exclusive'), # italic end - analogicznie do be
+        ('tagend', 'exclusive'), # TODO
     )
     
     t_ANY_ignore = ' \t'
@@ -48,26 +50,38 @@ class Txt2TagsToXML(Translator):
         t.lexer.push_state('is')
         self.log.debug('ITALIC_S token: ' + t.value)
         return t
-            
+    
+    # koniec bold, ale także koniec innego znacznika
+    def t_tagend_BOLD_E_I(self, t):
+        r'\*\*(?=\/\/)'
+        self.log.debug('t_be_BOLD_E_I: ' + t.value)
+        return t
     
     # Znacznik kończący bold, musi go poprzedzać jakiś znak.
     # Nie można wykonać "positive lookbehind" gdyż poprzedni znak należy
     # do jakiegoś innego tokena. W tym celu używa się flagi format['bold'].  
-    def t_be_BOLD_E(self, t):
+    def t_tagend_BOLD_E(self, t):
         r'\*\*'
         # zdjęcie stanu be - koniec bold
         t.lexer.pop_state()
+#        t.lexer.push_state('tagend')
         self.log.debug('t_be_BOLD_E: ' + t.value)
         return t
 
+    # //**
+    def t_tagend_ITALIC_E_B(self, t):
+        r'\/\/(?=\*\*)'
+        self.log.debug('t_ITALIC_E_B: ' + t.value)
+        return t
+
     # Analogicznie do t_be_BOLD_E
-    def t_ie_ITALIC_E(self, t):
+    def t_tagend_ITALIC_E(self, t):
         r'\/\/'
         # zdjęcie stanu ie - koniec italic
         t.lexer.pop_state()
         self.log.debug('t_ie_ITALIC_E: ' + t.value)
         return t
-
+    
     
 
     # Szukamy pierwszego wystąpienia podwójnych gwiazdek, 
@@ -77,7 +91,7 @@ class Txt2TagsToXML(Translator):
     def t_bs_WORD(self, t):
         r'[^\s]+?(?=\*\*)'
         # lexer gotowy na pobranie znaków zamykających bold
-        t.lexer.begin('be')
+        t.lexer.begin('tagend')
         self.log.debug('WORD ending bold token: ' + t.value)
         return t
 
@@ -85,13 +99,15 @@ class Txt2TagsToXML(Translator):
     def t_is_WORD(self, t):
         r'[^\s]+?(?=\/\/)'
         # lexer gotowy na pobranie znaków zamykających bold
-        t.lexer.begin('ie')
+        t.lexer.begin('tagend')
         self.log.debug('WORD ending italic token: ' + t.value)
         return t
 
     # słowo wykrywane we wszystkich trybach
     def t_WORD(self, t):
         r'[^\s]+'
+#        if t.lexer.current_state == 'tagend':
+#            t.lexer.pop_state()
         self.log.debug('WORD normal token: ' + t.value);
         return t
 
@@ -190,15 +206,28 @@ class Txt2TagsToXML(Translator):
         
     def p_bold(self, p):
         '''
-        bold    : BOLD_S line_content BOLD_E
+        bold    : BOLD_S line_content bold_end
         '''
         p[0] = '<b>%s</b>' % p[2]
+        
+    def p_bold_end(self, p):
+        '''
+        bold_end    : BOLD_E
+                    | BOLD_E_I
+        '''
 
     def p_italic(self, p):
         '''
-        italic    : ITALIC_S line_content ITALIC_E
+        italic    : ITALIC_S line_content italic_end
         '''
         p[0] = '<i>%s</i>' % p[2]
+        
+    def p_italic_end(self, p):
+        '''
+        italic_end    : ITALIC_E
+                        | ITALIC_E_B
+        '''
+        p[0] = p[1]
         
     def p_plain(self, p):
         '''
