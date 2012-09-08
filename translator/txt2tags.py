@@ -27,6 +27,8 @@ class Txt2TagsToXML(Translator):
         'UNDERLINE_E_B',
         'UNDERLINE_E_I',
         'WORD',
+        'HEADING_S',
+        'HEADING_E',
     )
     
     states = (
@@ -34,6 +36,7 @@ class Txt2TagsToXML(Translator):
         ('is', 'inclusive'), # italic started
         ('us', 'inclusive'), # underline started
         ('tagend', 'exclusive'), # gotowość do parsowana taga zamykającego formatowanie
+        ('head', 'exclusive'), # nagłówek
     )
     
     t_ANY_ignore = ' \t'
@@ -133,6 +136,20 @@ class Txt2TagsToXML(Translator):
         t.lexer.pop_state()
         return t
 
+    # --- HEADING ---
+
+    def t_HEADING_S(self, t):
+        r'='
+        t.lexer.push_state('head')
+        self.log.debug('H>')
+        return t
+   
+    def t_head_HEADING_E(self, t):
+        r'='
+        t.lexer.pop_state()
+        self.log.debug('<H')
+        return t
+
     # --- WORD ---
 
     # Szukamy pierwszego wystąpienia zamykającego taga, 
@@ -146,11 +163,15 @@ class Txt2TagsToXML(Translator):
         self.log.debug('WORD ending tag token: ' + t.value)
         return t
 
-    # słowo wykrywane we wszystkich trybach
-    def t_WORD(self, t):
+    # Ostatnie słowo w nagłówku przed =
+    def t_head_WORD(self, t):
+        r'[^\s]+(?=\=)'
+        self.log.debug('head WORD token: ' + t.value)
+        return t
+
+    # Słowo wykrywane we wszystkich trybach
+    def t_ANY_WORD(self, t):
         r'[^\s]+'
-#        if t.lexer.current_state == 'tagend':
-#            t.lexer.pop_state()
         self.log.debug('WORD normal token: ' + t.value);
         return t
 
@@ -160,7 +181,10 @@ class Txt2TagsToXML(Translator):
     # 2 lub więcej znaków nowej linii - oddziela akapit
     t_PAREND = '\\n{2,}'
     
-        
+    # ========================    
+    # PARSER    
+    # ========================    
+    
     # dokument z wieloma akapitami
     def p_document_multi(self, p):
         '''
@@ -221,6 +245,19 @@ class Txt2TagsToXML(Translator):
         '''
         self.log.debug('line_content BLANK')
         p[0] = ''
+    
+    
+    def p_heading(self, p):
+        '''
+        heading    : HEADING_S plain HEADING_E
+        '''
+        p[0] = '<h1>%s</h1>' % p[2]
+        
+    def p_line_content_head(self, p):
+        '''
+        line_content    : heading
+        '''
+        p[0] = p[1]
         
     # zawartość pojedynczej linii (wiele elementów)
     def p_line_content(self, p):

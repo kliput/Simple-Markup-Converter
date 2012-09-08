@@ -87,7 +87,18 @@ class SimpleMarkupConverterTests(unittest.TestCase):
         self.assertEqual(1, len(
                                 rx.findall(smc.get_output())
                                 ))
-
+    
+    # nagłówek pojedynczy
+    def test_t2t_head1(self):
+        smc = SimpleMarkupConverter(input='lorem ipsum\n\n =sit dolor =\namet')
+        smc.parse()
+        rx = re.compile(r'''
+        \<h1\>\s*sit\s*dolor\s*\<\/h1\>
+        ''',  re.VERBOSE)
+        self.assertEqual(1, len(
+                                rx.findall(smc.get_output())
+                                ))
+    
 
 if __name__ == '__main__':
     unittest.main()
