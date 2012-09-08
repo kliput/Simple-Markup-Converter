@@ -4,14 +4,7 @@ class Txt2TagsToXML(Translator):
     '''
     Translator txt2tags -> XML (języka wewnętrznego)
     '''
-    
-    # Mapa otwartych znaczników formatowania.
-    # Znaczniki tego samego typu nie mogą się zagnieżdżać.
-    format = {
-              'bold': False, # pojawił się początek bold
-              'italic': False, # pojawił się początek italic
-              }
-    
+        
     def __init__(self):
         super().__init__()
         self.log.debug('%s constructor' % self.__class__.__name__)
@@ -36,35 +29,25 @@ class Txt2TagsToXML(Translator):
     
     t_ANY_ignore = ' \t'
     
-    # znacznik rozpoczynający pogrubienie: **<znak>
-    def t_BOLD_S(self, t):
+    # Znacznik rozpoczynający pogrubienie: **<znak>
+    # Może być wykryte tylko w stanie, gdy nie rozpoczęliśmy znacznika bold
+    # (w obecnym zagnieżdżeniu)
+    # TODO dodawać możliwe wszystkie stany inclusive
+    def t_INITIAL_is_BOLD_S(self, t):
         r'\*\*(?=[^\s])'
-        # sprawdzenie, czy już został otwarty znacznik **
-        # można używać stosu stanów, ale to bardziej skomplikowane
-        if not self.format['bold']:
-            # jeśli nie - ustawienie tej flagi oraz stanu
-            self.format['bold'] = True
-            t.lexer.push_state('bs')
-            # i normalne zwrócenie tokenu
-            self.log.debug('BOLD_S token: ' + t.value)
-            return t
-        else:
-            # jeśli tak - pominięcie go
-            self.log.debug('BOLD_S skip: ' + t.value)
+        # dorzucenie stanu otwartego bold
+        t.lexer.push_state('bs')
+        self.log.debug('BOLD_S token: ' + t.value)
+        return t
             
     # znacznik rozpoczynający kursywę: //<znak>
-    def t_ITALIC_S(self, t):
+    # TODO dodawać możliwe wszystkie stany inclusive
+    def t_INITIAL_bs_ITALIC_S(self, t):
         r'\/\/(?=[^\s])'
-        if not self.format['italic']:
-            # jeśli nie - ustawienie tej flagi oraz stanu
-            self.format['italic'] = True
-            t.lexer.push_state('is')
-            # i normalne zwrócenie tokenu
-            self.log.debug('ITALIC_S token: ' + t.value)
-            return t
-        else:
-            # jeśli tak - pominięcie go
-            self.log.debug('ITALIC_S skip: ' + t.value)
+        # dorzucenie stanu otwartego italic
+        t.lexer.push_state('is')
+        self.log.debug('ITALIC_S token: ' + t.value)
+        return t
             
     
     # Znacznik kończący bold, musi go poprzedzać jakiś znak.
@@ -74,8 +57,6 @@ class Txt2TagsToXML(Translator):
         r'\*\*'
         # zdjęcie stanu be - koniec bold
         t.lexer.pop_state()
-        # koniec bloku bold - można parsować kolejny początek bold
-        self.format['bold'] = False
         self.log.debug('t_be_BOLD_E: ' + t.value)
         return t
 
@@ -84,10 +65,10 @@ class Txt2TagsToXML(Translator):
         r'\/\/'
         # zdjęcie stanu ie - koniec italic
         t.lexer.pop_state()
-        # koniec bloku italic - można parsować kolejny początek italic
-        self.format['italic'] = False
         self.log.debug('t_ie_ITALIC_E: ' + t.value)
         return t
+
+    
 
     # Szukamy pierwszego wystąpienia podwójnych gwiazdek, 
     # które są poprzedzone przynajmniej jednym dowolnym znakiem.
@@ -189,7 +170,8 @@ class Txt2TagsToXML(Translator):
         '''
         
         p[0] = p[1] + ' ' + p[2]
-        
+    
+    # zawartość pojedynczej linii - ostatni element
     def p_line_content_blank(self, p):
         '''
         line_content    : element
