@@ -77,18 +77,17 @@ class SimpleMarkupConverterTests(unittest.TestCase):
                                 rx.findall(smc.get_output())
                                 ))
 
-    # zagnieżdżenie tagów tego samego typu
-#    def test_t2t_formats2(self):
-#        smc = SimpleMarkupConverter(input='**lorem **ipsum sit** dolor** amet')
-#        smc.parse()
-#        rx = re.compile(r'''
-#        \<p\>\<b\> \s* lorem \s* ipsum \s* sit \s* \<\/b\> \s* dolor \s* \*\* \s* amet \s* \<\/p\>
-#        ''', re.VERBOSE)
-#        self.assertEqual(1, len(
-#                        rx.findall(smc.get_output())
-#                        ))
+    # bold, italic, underline "przemieszane"
+    def test_t2t_formats2(self):
+        smc = SimpleMarkupConverter(input='**lorem __//ipsum// sit dolor__** amet')
+        smc.parse()
+        rx = re.compile(r'''
+        \<b\>\s*lorem \s*\<u\>\s*\<i\>\s*ipsum\s*\<\/i\> \s*sit \s*dolor\s*\<\/\u\>\s*\<\/b\>\s* amet
+        ''',  re.VERBOSE)
+        self.assertEqual(1, len(
+                                rx.findall(smc.get_output())
+                                ))
 
-    # TODO test mieszanego zagnieżdżania (BIBbib)
 
 if __name__ == '__main__':
     unittest.main()
