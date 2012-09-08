@@ -29,6 +29,7 @@ class Txt2TagsToXML(Translator):
         'WORD',
         'HEADING_S',
         'HEADING_E',
+        'BULLET'
     )
     
     states = (
@@ -185,7 +186,12 @@ class Txt2TagsToXML(Translator):
         self.log.debug('<H5')
         return t
 
-
+    # --- WYPUNKTOWANIE ---
+    
+    def t_BULLET(self, t):
+        r'-'
+        self.log.debug('Bullet')
+        return t
 
     # --- WORD ---
 
@@ -211,6 +217,8 @@ class Txt2TagsToXML(Translator):
         r'[^\s]+'
         self.log.debug('WORD normal token: ' + t.value);
         return t
+
+    # --- NOWE LINIE
 
     # 1 znak nowej linii - może pojawić się w ramach akapitu
     t_NEWLINE = '\\n'
@@ -252,14 +260,14 @@ class Txt2TagsToXML(Translator):
         '''
         self.log.debug('par %s' % p[1])
         p[0] = '<p>%s</p>' % p[1]
-        
+    
     def p_paragraph_blank(self, p):
         '''
         paragraph    : 
         '''
         self.log.debug('par BLANK')
         p[0] = ''
-        
+
     # akapit zawierający więcej elementów
     def p_paragraph_content(self, p):
         '''
@@ -274,7 +282,13 @@ class Txt2TagsToXML(Translator):
         '''
         p[0] = p[1] + p[2] + '\n'
 
-    # TODO co to jest?
+    # wypunktowanie
+    def p_paragraph_list(self, p):
+        '''
+        paragraph_content    : paragraph_content list
+        '''
+        p[0] = '<ul>%s</ul>' % p[1]
+    
     # akapit zawierający więcej elementów przedzielone pojedynczym znakiem nowej linii
     def p_paragraph_content_blank(self, p):
         '''
@@ -282,14 +296,19 @@ class Txt2TagsToXML(Translator):
         '''
         self.log.debug('line_content BLANK')
         p[0] = ''
-    
-    
-    def p_heading(self, p):
+            
+    def p_list(self, p):
         '''
-        heading    : HEADING_S plain HEADING_E
+        list    : list BULLET line_content NEWLINE
         '''
-        p[0] = '%s%s%s' % (p[1], p[2], p[3])
+        p[0] = p[1] + '<li>%s</li>' % p[3]
         
+    def p_list_last(self, p):
+        '''
+        list    : BULLET line_content NEWLINE
+        '''
+        p[0] = '<li>%s</li>' % p[2]
+    
     def p_line_content_head(self, p):
         '''
         line_content    : heading
@@ -311,6 +330,12 @@ class Txt2TagsToXML(Translator):
         self.log.debug('lc (single) %s' % (p[1]))
         p[0] = p[1]
         
+    def p_heading(self, p):
+        '''
+        heading    : HEADING_S plain HEADING_E
+        '''
+        p[0] = '%s%s%s' % (p[1], p[2], p[3])
+            
     def p_element(self, p):
         '''
         element    : plain 
