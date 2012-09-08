@@ -243,4 +243,3 @@ class Txt2TagsToXML(Translator):
         '''
         self.log.debug('plain: WORD (%s)' % p[1])
         p[0] = p[1]
-    
