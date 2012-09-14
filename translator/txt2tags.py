@@ -273,16 +273,18 @@ class Txt2TagsToXML(Translator):
     # Akapit zawierający więcej elementów
     def p_paragraph_content(self, p):
         '''
-        paragraph_content   : paragraph_content line_content
+        paragraph_content   : line_content
         '''
-        p[0] = p[1] + p[2]
+        self.log.debug('pc: lc %s' % (p[1]))
+        p[0] = p[1]
     
     # Zawartość akapitu ze znakami nowej linii wewnątrz
     def p_paragraph_content_wnl(self, p):
         '''
-        paragraph_content   : paragraph_content line_content NEWLINE
+        paragraph_content   : paragraph_content NEWLINE line_content
         '''
-        p[0] = p[1] + p[2] + '\n'
+        self.log.debug('pc: pc %s NL lc %s' % (p[1], p[3]))
+        p[0] = p[1] + '\n' + p[3]
 
 #    # wypunktowanie
 #    def p_paragraph_list(self, p):
@@ -291,24 +293,24 @@ class Txt2TagsToXML(Translator):
 #        '''
 #        p[0] = '<ul>%s</ul>' % p[1]
     
-    def p_paragraph_content_blank(self, p):
-        '''
-        paragraph_content   : 
-        '''
-        self.log.debug('line_content BLANK')
-        p[0] = ''
+#    def p_paragraph_content_blank(self, p):
+#        '''
+#        paragraph_content   : 
+#        '''
+#        self.log.debug('line_content BLANK')
+#        p[0] = ''
             
-    def p_list(self, p):
-        '''
-        list    : list BULLET line_content NEWLINE
-        '''
-        p[0] = p[1] + '<li>%s</li>' % p[3]
+#    def p_list(self, p):
+#        '''
+#        list    : list BULLET line_content NEWLINE
+#        '''
+#        p[0] = p[1] + '<li>%s</li>' % p[3]
         
-    def p_list_last(self, p):
-        '''
-        list    : BULLET line_content NEWLINE
-        '''
-        p[0] = '<li>%s</li>' % p[2]
+#    def p_list_last(self, p):
+#        '''
+#        list    : BULLET line_content NEWLINE
+#        '''
+#        p[0] = '<li>%s</li>' % p[2]
     
     def p_line_content_head(self, p):
         '''
@@ -316,21 +318,31 @@ class Txt2TagsToXML(Translator):
         '''
         p[0] = p[1]
         
-    # zawartość pojedynczej linii (wiele elementów)
+    # Zawartość pojedynczej linii (wiele elementów)
     def p_line_content(self, p):
         '''
         line_content   : line_content element
         '''
+        self.log.debug('lc: lc %s element %s' % (p[1], p[2]))
         p[0] = p[1] + ' ' + p[2]
     
-    # zawartość pojedynczej linii - ostatni element
-    def p_line_content_blank(self, p):
+    # Zawartość pojedynczej linii - jedyny, bądź pierwszy element
+    def p_line_content_single(self, p):
         '''
         line_content    : element
         '''
         self.log.debug('lc (single) %s' % (p[1]))
         p[0] = p[1]
         
+    # Pusta linia - może pojawić się na końcu pliku
+    def p_line_content_blank(self, p):
+        '''
+        line_content    : 
+        '''
+        self.log.debug('lc BLANK')
+        p[0] = ''
+        
+    
     def p_heading(self, p):
         '''
         heading    : HEADING_S plain HEADING_E
