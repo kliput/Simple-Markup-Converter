@@ -230,12 +230,14 @@ class Txt2TagsToXML(Translator):
     # PARSER    
     # ========================    
     
-    # dokument z wieloma akapitami
+    # === document ===
+    
+    # Dokument z wieloma akapitami
     def p_document_multi(self, p):
         '''
         document    : document PAREND paragraph
         '''
-        self.log.debug('document: document (%s)  PAREND paragraph (%s)' % (p[1], p[3]))
+        self.log.debug('document: document (%s) PAREND paragraph (%s)' % (p[1], p[3]))
         p[0] = p[1] + ' ' + p[3]
     
     # dokument z jednym akapitem, bądź pierwszy akapit
@@ -246,14 +248,10 @@ class Txt2TagsToXML(Translator):
         self.log.debug('document: paragraph (%s)' % (p[1]))
         p[0] = p[1]
     
-#    # dokument może być w ogóle pusty
-#    def p_document_blank(self, p):
-#        '''
-#        document    : 
-#        '''
-#        self.log.debug("(document blank)")
-#        p[0] = ''
+    # === paragraph ===
     
+    # Symbol nieterminalny na potrzeby opakowania zawartości akapitu
+    # w tagi <p>
     def p_paragraph(self, p):
         '''
         paragraph    : paragraph_content
@@ -261,6 +259,8 @@ class Txt2TagsToXML(Translator):
         self.log.debug('par %s' % p[1])
         p[0] = '<p>%s</p>' % p[1]
     
+    # Pusty akapit - jeśli dokument jest pusty bądź nie zawiera dolnego
+    # oddzielenia PAREND
     def p_paragraph_blank(self, p):
         '''
         paragraph    : 
@@ -268,28 +268,29 @@ class Txt2TagsToXML(Translator):
         self.log.debug('par BLANK')
         p[0] = ''
 
-    # akapit zawierający więcej elementów
+    # === paragraph_content ===
+
+    # Akapit zawierający więcej elementów
     def p_paragraph_content(self, p):
         '''
         paragraph_content   : paragraph_content line_content
         '''
         p[0] = p[1] + p[2]
-        
-    # akapit zawierający więcej elementów przedzielone pojedynczym znakiem nowej linii
+    
+    # Zawartość akapitu ze znakami nowej linii wewnątrz
     def p_paragraph_content_wnl(self, p):
         '''
         paragraph_content   : paragraph_content line_content NEWLINE
         '''
         p[0] = p[1] + p[2] + '\n'
 
-    # wypunktowanie
-    def p_paragraph_list(self, p):
-        '''
-        paragraph_content    : paragraph_content list
-        '''
-        p[0] = '<ul>%s</ul>' % p[1]
+#    # wypunktowanie
+#    def p_paragraph_list(self, p):
+#        '''
+#        paragraph_content    : paragraph_content list
+#        '''
+#        p[0] = '<ul>%s</ul>' % p[1]
     
-    # akapit zawierający więcej elementów przedzielone pojedynczym znakiem nowej linii
     def p_paragraph_content_blank(self, p):
         '''
         paragraph_content   : 

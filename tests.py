@@ -99,7 +99,7 @@ class SimpleMarkupConverterTests(unittest.TestCase):
                                 rx.findall(smc.get_output())
                                 ))
     def test_t2t_head2(self):
-        smc = SimpleMarkupConverter(input='= lorem ipsum =\n==== sit dolor ====')
+        smc = SimpleMarkupConverter(input='= lorem ipsum =\n\n\n\t   ==== sit dolor ====')
         smc.parse()
         r1 = re.compile(r'''
         \<h1\>\s*lorem\s+ipsum\s*\<\/h1\>

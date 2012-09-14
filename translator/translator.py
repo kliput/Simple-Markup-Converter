@@ -3,6 +3,7 @@
 import logging
 import ply.lex as lex
 import ply.yacc as yacc
+import re
 
 class Translator(object):
     '''
@@ -22,7 +23,7 @@ class Translator(object):
     def __init__(self):
         self.log = logging.getLogger(self.__class__.__name__)
         self.log.debug('Translator constructor')
-        self.my_lex = lex.lex(module=self, debug=self.debug)
+        self.my_lex = lex.lex(module=self, debug=self.debug, reflags=re.MULTILINE)
         self.my_yacc = yacc.yacc(module=self, debug=self.debug)
     
     def run(self, text):
