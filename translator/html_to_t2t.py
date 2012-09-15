@@ -29,17 +29,28 @@ class HtmlToTxt2Tags(Translator):
         'OL_E',
         'LI_S',
         'LI_E',
+        'H_S',
+        'H_E',
         'WORD',
     )
     
     states = (
         ('p', 'inclusive'), # <p>...
+        # formatowanie
         ('b', 'inclusive'), # <b>...
         ('i', 'inclusive'), # <i>...
         ('u', 'inclusive'), # <u>...
+        # listy
         ('ul', 'inclusive'), # <ul>...
         ('ol', 'inclusive'), # <ol>...
         ('li', 'inclusive'), # <li>...
+        # nagłówki
+        ('h1', 'inclusive'),
+        ('h2', 'inclusive'),
+        ('h3', 'inclusive'),
+        ('h4', 'inclusive'),
+        ('h5', 'inclusive'),
+        
     )
     
     t_ANY_ignore = ' \t\n'
@@ -53,13 +64,58 @@ class HtmlToTxt2Tags(Translator):
     def t_INITIAL_PAR_S(self, t):
         r'\<p\>'
         t.lexer.push_state('p')
-        self.log.debug(r'<p>');
+        self.log.debug(r'<p>')
         return t
 
     def t_p_PAR_E(self, t):
         r'\<\/p\>'
         t.lexer.pop_state()
-        self.log.debug(r'</p>');
+        self.log.debug(r'</p>')
+        return t
+    
+    # --- nagłówki ---
+    
+    def t_INITIAL_H_S(self, t):
+        r'\<h\d\>'
+        lvl = re.match(r'\<h(\d)\>', t.value).group(1)
+        t.lexer.push_state('h%s' % (lvl))
+        t.value = '=' * int(lvl)
+        self.log.debug('Heading start level: %s' % (lvl))
+        return t
+    
+    def t_h1_H_E(self, t):
+        r'\<\/h1\>'
+        t.lexer.pop_state()
+        t.value = '=' * 1
+        self.log.debug(r'</h1>')
+        return t
+    
+    def t_h2_H_E(self, t):
+        r'\<\/h2\>'
+        t.lexer.pop_state()
+        t.value = '=' * 2
+        self.log.debug(r'</h2>')
+        return t
+    
+    def t_h3_H_E(self, t):
+        r'\<\/h3\>'
+        t.lexer.pop_state()
+        t.value = '=' * 3
+        self.log.debug(r'</h3>')
+        return t
+    
+    def t_h4_H_E(self, t):
+        r'\<\/h4\>'
+        t.lexer.pop_state()
+        t.value = '=' * 4
+        self.log.debug(r'</h4>')
+        return t
+    
+    def t_h5_H_E(self, t):
+        r'\<\/h5\>'
+        t.lexer.pop_state()
+        t.value = '=' * 5
+        self.log.debug(r'</h5>')
         return t
     
     # <b>
@@ -151,9 +207,10 @@ class HtmlToTxt2Tags(Translator):
     # Ten token powinien być wykrywany w stanach dla każdego taga,
     # w którym może bezpośrednio leżeć słowo.
     # Słowo, po którym następuje koniec jakiegoś taga.
-    def t_p_b_i_u_li_WORD(self, t):
+    def t_p_b_i_u_li_h1_h2_h3_h4_h5_WORD(self, t):
         r'[^\s]+?(?=\s*\<\/)'
         self.log.debug('WORD tag end token: ' + t.value)
+        self.log.debug(str(t.lexer.lexstatestack) + ' -> ' + str(t.lexer.lexstate))
         return t
     
     # Słowo wykrywane we wszystkich trybach
@@ -187,6 +244,7 @@ class HtmlToTxt2Tags(Translator):
         block    : paragraph
                     | list
                     | enum
+                    | heading
         '''
         self.log.debug('block: (...) (%s)' % (p[1]))
         p[0] = '%s' % (p[1])
@@ -196,6 +254,14 @@ class HtmlToTxt2Tags(Translator):
         paragraph    : PAR_S content PAR_E
         '''
         self.log.debug('par <p> content (%s) <\/p>' % (p[2]))
+        p[0] = '%s\n\n' % (p[2])
+
+    # sytuacja wyjątkowa, ale takie też są generowane
+    def p_paragraph_empty(self, p):
+        '''
+        paragraph    : PAR_S PAR_E
+        '''
+        self.log.debug('par <p></p> (empty)')
         p[0] = '%s\n\n' % (p[2])
 
     def p_content(self, p):
@@ -321,3 +387,11 @@ class HtmlToTxt2Tags(Translator):
         self.log.debug(r'enum_pos <li> content (%s) </li>' % (p[2]))
         p[0] = '+ %s' % (p[2])
         
+    # --- obsługa nagłówków
+    
+    def p_heading(self, p):
+        '''
+        heading    : H_S plain H_E
+        '''
+        self.log.debug(r'heading <h*> plain (%s) </h*>' % (p[2]))
+        p[0] = '%s %s %s\n\n' % (p[1], p[2], p[3])
