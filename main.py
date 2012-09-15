@@ -20,6 +20,7 @@
 from ply import lex
 from translator.dummy import PassTranslator
 from translator.txt2tags import Txt2TagsToXML
+from translator.html_to_t2t import HtmlToTxt2Tags
 import argparse
 import logging
 
@@ -51,7 +52,7 @@ class SimpleMarkupConverter(object):
                       "html":
                       {OUT: PassTranslator},
                       "txt2tags":
-                      {IN: Txt2TagsToXML},
+                      {IN: Txt2TagsToXML, OUT: HtmlToTxt2Tags},
                     }
 
     def __init__(self, **kwargs):

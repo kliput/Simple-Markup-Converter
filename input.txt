@@ -1,8 +1,18 @@
-Pierwszy
-- wode
-- prad
-- gaz
+= Prezentacja Txt2Tags =
+== Formatowanie ==
 
-drugi
+**Lorem __ipsum__** //sit// __dolor__ amet.
 
-trzeci
+
+== Listy ==
+
+- pozycja 1
+- pozycja 2
+- wiele
+linii
+
+== Numeracja list ==
+
++ pierwsza
++ druga
++ trzecia
