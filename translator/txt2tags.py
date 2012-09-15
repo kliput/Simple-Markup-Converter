@@ -29,7 +29,7 @@ class Txt2TagsToXML(Translator):
         'WORD',
         'HEADING_S',
         'HEADING_E',
-        'BULLET'
+#        'BULLET'
     )
     
     states = (
@@ -144,7 +144,7 @@ class Txt2TagsToXML(Translator):
     # --- HEADING ---
 
     def t_HEADING_S(self, t):
-        r'={1,5}'
+        r'\s*={1,5}'
         lvl = t.value.count('=')
         t.lexer.push_state('head%s' % str(lvl))
         t.value = '<h%s>' % str(lvl)
@@ -152,35 +152,35 @@ class Txt2TagsToXML(Translator):
         return t
     
     def t_head1_HEADING_E(self, t):
-        r'='
+        r'=\s*$'
         t.lexer.pop_state()
         t.value = '</h1>'
         self.log.debug('<H1')
         return t
 
     def t_head2_HEADING_E(self, t):
-        r'=='
+        r'==\s*$'
         t.lexer.pop_state()
         t.value = '</h2>'
         self.log.debug('<H2')
         return t
 
     def t_head3_HEADING_E(self, t):
-        r'==='
+        r'===\s*$'
         t.lexer.pop_state()
         t.value = '</h3>'
         self.log.debug('<H3')
         return t
 
     def t_head4_HEADING_E(self, t):
-        r'===='
+        r'====\s*$'
         t.lexer.pop_state()
         t.value = '</h4>'
         self.log.debug('<H4')
         return t
     
     def t_head5_HEADING_E(self, t):
-        r'====='
+        r'=====\s*$'
         t.lexer.pop_state()
         t.value = '</h5>'
         self.log.debug('<H5')
@@ -188,10 +188,10 @@ class Txt2TagsToXML(Translator):
 
     # --- WYPUNKTOWANIE ---
     
-    def t_BULLET(self, t):
-        r'-'
-        self.log.debug('Bullet')
-        return t
+#    def t_BULLET(self, t):
+#        r'-'
+#        self.log.debug('Bullet')
+#        return t
 
     # --- WORD ---
 
@@ -226,6 +226,7 @@ class Txt2TagsToXML(Translator):
     # 2 lub więcej znaków nowej linii - oddziela akapit
     t_PAREND = '\\n{2,}'
     
+    
     # ========================    
     # PARSER    
     # ========================    
@@ -235,53 +236,67 @@ class Txt2TagsToXML(Translator):
     # Dokument z wieloma akapitami
     def p_document_multi(self, p):
         '''
-        document    : document PAREND paragraph
+        document    : document block
         '''
-        self.log.debug('document: document (%s) PAREND paragraph (%s)' % (p[1], p[3]))
-        p[0] = p[1] + ' ' + p[3]
+        self.log.debug('document: document (%s) block (%s)' % (p[1], p[2]))
+        p[0] = p[1] + p[2]
     
+    def p_document_single(self, p):
+        '''
+        document    : block
+        '''
+        self.log.debug('document: block (%s)' % (p[1]))
+        p[0] =  p[1]
+    
+    # akapit oddzielony od dołu
+    def p_block_par(self, p):
+        '''
+        block    : paragraph PAREND
+        '''
+        self.log.debug('block: par %s' % (p[1]))
+        p[0] = '<p>%s</p>' % (p[1])
+
+    # akapit, po którym od razu następuje nagłówek
+    def p_block_par_head(self, p):
+        '''
+        block    : paragraph heading
+        '''
+        self.log.debug('block: par (%s) heading (%s)' %(p[1], p[2]))
+        p[0] = '<p>%s</p>\n%s' % (p[1], p[2])
+
     # dokument z jednym akapitem, bądź pierwszy akapit
-    def p_document(self, p):
+    def p_block(self, p):
         '''
-        document    : paragraph
+        block    : heading
         '''
-        self.log.debug('document: paragraph (%s)' % (p[1]))
+        self.log.debug('block: %s' % (p[1]))
         p[0] = p[1]
     
     # === paragraph ===
     
-    # Symbol nieterminalny na potrzeby opakowania zawartości akapitu
-    # w tagi <p>
+#    # Pusty akapit - jeśli dokument jest pusty bądź nie zawiera dolnego
+#    # oddzielenia PAREND
+#    def p_paragraph_blank(self, p):
+#        '''
+#        paragraph    : 
+#        '''
+#        self.log.debug('par BLANK')
+#        p[0] = ''
+
+    # === paragraph ===
+
+    # Zawartość akapitu
     def p_paragraph(self, p):
         '''
-        paragraph    : paragraph_content
-        '''
-        self.log.debug('par %s' % p[1])
-        p[0] = '<p>%s</p>' % p[1]
-    
-    # Pusty akapit - jeśli dokument jest pusty bądź nie zawiera dolnego
-    # oddzielenia PAREND
-    def p_paragraph_blank(self, p):
-        '''
-        paragraph    : 
-        '''
-        self.log.debug('par BLANK')
-        p[0] = ''
-
-    # === paragraph_content ===
-
-    # Akapit zawierający więcej elementów
-    def p_paragraph_content(self, p):
-        '''
-        paragraph_content   : line_content
+        paragraph   : line_content
         '''
         self.log.debug('pc: lc %s' % (p[1]))
         p[0] = p[1]
     
     # Zawartość akapitu ze znakami nowej linii wewnątrz
-    def p_paragraph_content_wnl(self, p):
+    def p_paragraph_wnl(self, p):
         '''
-        paragraph_content   : paragraph_content NEWLINE line_content
+        paragraph   : paragraph NEWLINE line_content
         '''
         self.log.debug('pc: pc %s NL lc %s' % (p[1], p[3]))
         p[0] = p[1] + '\n' + p[3]
@@ -289,34 +304,34 @@ class Txt2TagsToXML(Translator):
 #    # wypunktowanie
 #    def p_paragraph_list(self, p):
 #        '''
-#        paragraph_content    : paragraph_content list
+#        paragraph    : list
 #        '''
 #        p[0] = '<ul>%s</ul>' % p[1]
     
-#    def p_paragraph_content_blank(self, p):
+#    def p_paragraph_blank(self, p):
 #        '''
-#        paragraph_content   : 
+#        paragraph   : 
 #        '''
 #        self.log.debug('line_content BLANK')
 #        p[0] = ''
             
 #    def p_list(self, p):
 #        '''
-#        list    : list BULLET line_content NEWLINE
+#        list    : list NEWLINE BULLET line_content
 #        '''
-#        p[0] = p[1] + '<li>%s</li>' % p[3]
-        
-#    def p_list_last(self, p):
+#        p[0] = '%s\n<li>%s</li>' % (p[1], p[3])
+#        
+#    def p_list_single(self, p):
 #        '''
-#        list    : BULLET line_content NEWLINE
+#        list    : BULLET line_content
 #        '''
 #        p[0] = '<li>%s</li>' % p[2]
     
-    def p_line_content_head(self, p):
-        '''
-        line_content    : heading
-        '''
-        p[0] = p[1]
+#    def p_line_content_head(self, p):
+#        '''
+#        line_content    : heading
+#        '''
+#        p[0] = p[1]
         
     # Zawartość pojedynczej linii (wiele elementów)
     def p_line_content(self, p):

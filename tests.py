@@ -12,7 +12,7 @@ class SimpleMarkupConverterTests(unittest.TestCase):
     '''
 
     def setUp(self):
-        self.seq = range(10)
+        pass
 
     # sprawdzenie prostego parsowania akapitów txt2tags na xml 
     def test_txt2tags_plain_par_to_xml(self):

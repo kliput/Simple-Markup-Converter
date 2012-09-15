@@ -30,4 +30,13 @@ class Translator(object):
         if text == '':
             return ''
         else:
+            # dodanie PAREND na końcu pliku - upraszcza gramatyki
+            text = text + '\n\n'
+            
+#            if self.debug == 0:
+#                print('Parsing:')
+#                print('--------')
+#                print(text)
+#                print('--------')
+                          
             return self.my_yacc.parse(input=text, lexer=self.my_lex, debug=self.debug)
