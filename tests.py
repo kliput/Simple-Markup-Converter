@@ -15,8 +15,9 @@ class SimpleMarkupConverterTests(unittest.TestCase):
         pass
 
     # sprawdzenie prostego parsowania akapitów txt2tags na xml 
-    def test_txt2tags_plain_par_to_xml(self):
-        smc = SimpleMarkupConverter(file='tests/t2t_plain_3par.txt')
+    def test_txt2tags_plain_par_to_html(self):
+        smc = SimpleMarkupConverter(input=open('tests/t2t_plain_3par.txt').read(),
+                                    input_t='txt2tags', output_t='html')
         # powodzenie w działaniu
         self.assertEqual(smc.parse(), Exit.SUCCESS)
         # sprawdzenie wyjścia
@@ -25,8 +26,9 @@ class SimpleMarkupConverterTests(unittest.TestCase):
         self.assertEqual(output.count('<p>'), output.count('</p>'))
         self.assertEqual(output.count('<p>'), 3)
 
-    def test_txt2tags_empty_to_xml(self):
-        smc = SimpleMarkupConverter(file='tests/empty.txt')
+    def test_txt2tags_empty_to_html(self):
+        smc = SimpleMarkupConverter(input=open('tests/empty.txt').read(),
+                                    input_t='txt2tags', output_t='html')
         # powodzenie w działaniu
         self.assertEqual(smc.parse(), Exit.SUCCESS)
         # sprawdzenie wyjścia
@@ -34,7 +36,8 @@ class SimpleMarkupConverterTests(unittest.TestCase):
         self.assertEqual(output, '')
     
     def test_t2t_bold1(self):
-        smc = SimpleMarkupConverter(input='lorem **ipsum sit** dolor amet')
+        smc = SimpleMarkupConverter(input='lorem **ipsum sit** dolor amet',
+                                    input_t='txt2tags', output_t='html')
         smc.parse()
         # poprawne wyjście - konwersja tagów jeden raz
         self.assertEqual(1, len(
@@ -42,13 +45,15 @@ class SimpleMarkupConverterTests(unittest.TestCase):
                                            smc.get_output())))
 
     def test_t2t_bold2(self):
-        smc = SimpleMarkupConverter(input='lorem ** ipsum sit** dolor amet')
+        smc = SimpleMarkupConverter(input='lorem ** ipsum sit** dolor amet',
+                                    input_t='txt2tags', output_t='html')
         smc.parse()
         # brak konwersji tagów
         self.assertTrue(smc.get_output().count('<b>') == smc.get_output().count('</b>') == 0)
 
     def test_t2t_bold3(self):
-        smc = SimpleMarkupConverter(input='lorem **ipsum sit ** dolor** amet')
+        smc = SimpleMarkupConverter(input='lorem **ipsum sit ** dolor** amet',
+                                    input_t='txt2tags', output_t='html')
         smc.parse()
         # jeden zakres bold ipsum-dolor
         self.assertEqual(1, len(
@@ -56,7 +61,8 @@ class SimpleMarkupConverterTests(unittest.TestCase):
                                            smc.get_output())))
 
     def test_t2t_bold4(self):
-        smc = SimpleMarkupConverter(input='**lorem ipsum** **sit dolor** ** amet')
+        smc = SimpleMarkupConverter(input='**lorem ipsum** **sit dolor** ** amet',
+                                    input_t='txt2tags', output_t='html')
         smc.parse()
         # 2 zakresy bold
         self.assertEqual(1, len(
@@ -68,7 +74,8 @@ class SimpleMarkupConverterTests(unittest.TestCase):
 
     # formatowanie zagnieżdżone (bold<-italic)
     def test_t2t_formats1(self):
-        smc = SimpleMarkupConverter(input='**lorem //ipsum sit// dolor** amet')
+        smc = SimpleMarkupConverter(input='**lorem //ipsum sit// dolor** amet',
+                                    input_t='txt2tags', output_t='html')
         smc.parse()
         rx = re.compile(r'''
         \<b\> \s* lorem \s* \<i\> \s* ipsum \s* sit \s* \<\/i\> \s* dolor \s* \<\/b\> \s* amet 
@@ -79,7 +86,8 @@ class SimpleMarkupConverterTests(unittest.TestCase):
 
     # bold, italic, underline "przemieszane"
     def test_t2t_formats2(self):
-        smc = SimpleMarkupConverter(input='**lorem __//ipsum// sit dolor__** amet')
+        smc = SimpleMarkupConverter(input='**lorem __//ipsum// sit dolor__** amet',
+                                    input_t='txt2tags', output_t='html')
         smc.parse()
         rx = re.compile(r'''
         \<b\>\s*lorem \s*\<u\>\s*\<i\>\s*ipsum\s*\<\/i\> \s*sit \s*dolor\s*\<\/\u\>\s*\<\/b\>\s* amet
@@ -90,7 +98,8 @@ class SimpleMarkupConverterTests(unittest.TestCase):
     
     # nagłówek pojedynczy
     def test_t2t_head1(self):
-        smc = SimpleMarkupConverter(input='lorem ipsum\n\n =sit dolor =\namet')
+        smc = SimpleMarkupConverter(input='lorem ipsum\n\n =sit dolor =\namet',
+                                    input_t='txt2tags', output_t='html')
         smc.parse()
         rx = re.compile(r'''
         \<h1\>\s*sit\s*dolor\s*\<\/h1\>
@@ -99,7 +108,8 @@ class SimpleMarkupConverterTests(unittest.TestCase):
                                 rx.findall(smc.get_output())
                                 ))
     def test_t2t_head2(self):
-        smc = SimpleMarkupConverter(input='= lorem ipsum =\n\n\n\t   ==== sit dolor ====')
+        smc = SimpleMarkupConverter(input='= lorem ipsum =\n\n\n\t   ==== sit dolor ====',
+                                    input_t='txt2tags', output_t='html')
         smc.parse()
         r1 = re.compile(r'''
         \<h1\>\s*lorem\s+ipsum\s*\<\/h1\>
@@ -123,7 +133,8 @@ class SimpleMarkupConverterTests(unittest.TestCase):
         
         Akapit ostatni
         '''
-        smc = SimpleMarkupConverter(input=text)
+        smc = SimpleMarkupConverter(input=text,
+                                    input_t='txt2tags', output_t='html')
         smc.parse()
         
         r_li = re.compile(r'''
@@ -144,7 +155,8 @@ class SimpleMarkupConverterTests(unittest.TestCase):
         + dwa
         + trzy
         '''
-        smc = SimpleMarkupConverter(input=text)
+        smc = SimpleMarkupConverter(input=text,
+                                    input_t='txt2tags', output_t='html')
         smc.parse()
         
         r_li = re.compile(r'''

@@ -16,16 +16,13 @@ class Txt2TagsToXML(Translator):
         'NEWLINE',
         'BOLD_S',
         'BOLD_E',
-        'BOLD_E_I',
-        'BOLD_E_U',
+        'BOLD_E_E',
         'ITALIC_S',
         'ITALIC_E',
-        'ITALIC_E_B',
-        'ITALIC_E_U',
+        'ITALIC_E_E',
         'UNDERLINE_S',
         'UNDERLINE_E',
-        'UNDERLINE_E_B',
-        'UNDERLINE_E_I',
+        'UNDERLINE_E_E',
         'WORD',
         'HEADING_S',
         'HEADING_E',
@@ -81,24 +78,16 @@ class Txt2TagsToXML(Translator):
     
     # --- BOLD ---
     
-    # koniec bold, ale także koniec znacznika //
-    # **//
-    def t_tagend_BOLD_E_I(self, t):
-        r'\*\*(?=\/\/)'
-        self.log.debug('t_be_BOLD_E_I: ' + t.value)
+    # koniec bold, ale także koniec innego znacznika 
+    # **// **__
+    def t_tagend_BOLD_E_E(self, t):
+        r'\*\*(?=\/\/|\_\_)'
+        self.log.debug('t_be_BOLD_E_X: ' + t.value)
         t.lexer.pop_state() # tag end
         t.lexer.pop_state() # tag start
         t.lexer.push_state('tagend')
         return t
 
-    # **__
-    def t_tagend_BOLD_E_U(self, t):
-        r'\*\*(?=\_\_)'
-        t.lexer.pop_state() # tag end
-        t.lexer.pop_state() # tag start
-        t.lexer.push_state('tagend')
-        return t
-    
     # Znacznik kończący bold, musi go poprzedzać jakiś znak.
     # Nie można wykonać "positive lookbehind" gdyż poprzedni znak należy
     # do jakiegoś innego tokena. W tym celu używa się flagi format['bold'].  
@@ -113,18 +102,9 @@ class Txt2TagsToXML(Translator):
 
     # --- ITALIC ---
 
-    # //**
-    def t_tagend_ITALIC_E_B(self, t):
-        r'\/\/(?=\*\*)'
-        self.log.debug('t_ITALIC_E_B: ' + t.value)
-        t.lexer.pop_state() # tag end
-        t.lexer.pop_state() # tag start
-        t.lexer.push_state('tagend')
-        return t
-
-    # //__
-    def t_tagend_ITALIC_E_U(self, t):
-        r'\/\/(?=\_\_)'
+    # //__ //**
+    def t_tagend_ITALIC_E_E(self, t):
+        r'\/\/(?=\_\_|\*\*)'
         t.lexer.pop_state() # tag end
         t.lexer.pop_state() # tag start
         t.lexer.push_state('tagend')
@@ -140,19 +120,10 @@ class Txt2TagsToXML(Translator):
         return t
     
     # --- UNDERLINE ---
-    
-    # __**
-    def t_tagend_UNDERLINE_E_B(self, t):
-        r'\_\_(?=\*\*)'
-        self.log.debug('__->** ' + str(t.lexer.lexstatestack))
-        t.lexer.pop_state() # tag end
-        t.lexer.pop_state() # tag start
-        t.lexer.push_state('tagend')
-        return t
 
-    # //__
-    def t_tagend_UNDERLINE_E_I(self, t):
-        r'\_\_(?=\/\/)'
+    # __// __**
+    def t_tagend_UNDERLINE_E_E(self, t):
+        r'\_\_(?=\/\/|\*\*)'
         t.lexer.pop_state() # tag end
         t.lexer.pop_state() # tag start
         t.lexer.push_state('tagend')
@@ -418,8 +389,7 @@ class Txt2TagsToXML(Translator):
     def p_bold_end(self, p):
         '''
         bold_end    : BOLD_E
-                    | BOLD_E_I
-                    | BOLD_E_U
+                    | BOLD_E_E
         '''
 
     def p_italic(self, p):
@@ -431,8 +401,7 @@ class Txt2TagsToXML(Translator):
     def p_italic_end(self, p):
         '''
         italic_end    : ITALIC_E
-                        | ITALIC_E_B
-                        | ITALIC_E_U
+                        | ITALIC_E_E
         '''
         p[0] = p[1]
         
@@ -445,8 +414,7 @@ class Txt2TagsToXML(Translator):
     def p_underline_end(self, p):
         '''
         underline_end    : UNDERLINE_E
-                        |    UNDERLINE_E_B
-                        |    UNDERLINE_E_I
+                        |    UNDERLINE_E_E
         '''
         p[0] = p[1]
     
