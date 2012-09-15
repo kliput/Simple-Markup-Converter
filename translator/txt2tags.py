@@ -29,7 +29,7 @@ class Txt2TagsToXML(Translator):
         'WORD',
         'HEADING_S',
         'HEADING_E',
-#        'BULLET'
+        'BULLET',
     )
     
     states = (
@@ -188,10 +188,10 @@ class Txt2TagsToXML(Translator):
 
     # --- WYPUNKTOWANIE ---
     
-#    def t_BULLET(self, t):
-#        r'-'
-#        self.log.debug('Bullet')
-#        return t
+    def t_BULLET(self, t):
+        r'-'
+        self.log.debug('Bullet')
+        return t
 
     # --- WORD ---
 
@@ -248,6 +248,15 @@ class Txt2TagsToXML(Translator):
         self.log.debug('document: block (%s)' % (p[1]))
         p[0] =  p[1]
     
+    # blok: nagłówek
+    def p_block(self, p):
+        '''
+        block    : heading
+        '''
+        self.log.debug('block: %s' % (p[1]))
+        p[0] = p[1]
+
+    
     # akapit oddzielony od dołu
     def p_block_par(self, p):
         '''
@@ -260,28 +269,39 @@ class Txt2TagsToXML(Translator):
     def p_block_par_head(self, p):
         '''
         block    : paragraph heading
+                | paragraph list
         '''
-        self.log.debug('block: par (%s) heading (%s)' %(p[1], p[2]))
+        self.log.debug('block: par (%s) other (%s)' %(p[1], p[2]))
         p[0] = '<p>%s</p>\n%s' % (p[1], p[2])
 
-    # dokument z jednym akapitem, bądź pierwszy akapit
-    def p_block(self, p):
+    # wypunktowanie
+    def p_block_list(self, p):
         '''
-        block    : heading
+        block    : list
         '''
-        self.log.debug('block: %s' % (p[1]))
-        p[0] = p[1]
+        self.log.debug('block: list %s' %(p[1]))
+        p[0] = '%s' % p[1]
     
-    # === paragraph ===
+    # === list ===
     
-#    # Pusty akapit - jeśli dokument jest pusty bądź nie zawiera dolnego
-#    # oddzielenia PAREND
-#    def p_paragraph_blank(self, p):
-#        '''
-#        paragraph    : 
-#        '''
-#        self.log.debug('par BLANK')
-#        p[0] = ''
+    # opakowanie listy w tag <ul>
+    def p_list(self, p):
+        '''
+        list    : list_pos
+        '''
+        p[0] = '<ul>%s</ul>' % (p[1])
+    
+    def p_list_pos(self, p):
+        '''
+        list_pos    : list_pos BULLET paragraph
+        '''
+        p[0] = '%s\n<li>%s</li>' % (p[1], p[3])
+
+    def p_list_pos_single(self, p):
+        '''
+        list_pos    : BULLET paragraph
+        '''
+        p[0] = '<li>%s</li>' % p[2]
 
     # === paragraph ===
 
@@ -300,38 +320,6 @@ class Txt2TagsToXML(Translator):
         '''
         self.log.debug('pc: pc %s NL lc %s' % (p[1], p[3]))
         p[0] = p[1] + '\n' + p[3]
-
-#    # wypunktowanie
-#    def p_paragraph_list(self, p):
-#        '''
-#        paragraph    : list
-#        '''
-#        p[0] = '<ul>%s</ul>' % p[1]
-    
-#    def p_paragraph_blank(self, p):
-#        '''
-#        paragraph   : 
-#        '''
-#        self.log.debug('line_content BLANK')
-#        p[0] = ''
-            
-#    def p_list(self, p):
-#        '''
-#        list    : list NEWLINE BULLET line_content
-#        '''
-#        p[0] = '%s\n<li>%s</li>' % (p[1], p[3])
-#        
-#    def p_list_single(self, p):
-#        '''
-#        list    : BULLET line_content
-#        '''
-#        p[0] = '<li>%s</li>' % p[2]
-    
-#    def p_line_content_head(self, p):
-#        '''
-#        line_content    : heading
-#        '''
-#        p[0] = p[1]
         
     # Zawartość pojedynczej linii (wiele elementów)
     def p_line_content(self, p):
