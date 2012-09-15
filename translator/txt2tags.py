@@ -232,7 +232,7 @@ class Txt2TagsToXML(Translator):
     t_NEWLINE = '\\n'
 
     # 2 lub więcej znaków nowej linii - oddziela akapit
-    t_PAREND = '\\n{2,}'
+    t_PAREND = '(\\n\\s*){2,}'
     
     
     # ========================    

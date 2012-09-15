@@ -113,6 +113,50 @@ class SimpleMarkupConverterTests(unittest.TestCase):
         self.assertEqual(1, len(
                                 r4.findall(smc.get_output())
                                 ))
+    def test_t2t_list(self):
+        text = '''
+        Lista wypunktowana:
+        - jeden
+        - dwa
+        - trzy
+        piecdzciesiat
+        
+        Akapit ostatni
+        '''
+        smc = SimpleMarkupConverter(input=text)
+        smc.parse()
+        
+        r_li = re.compile(r'''
+        \<li\>.+?\<\/li\>
+        ''', re.DOTALL | re.VERBOSE)
+                
+        r_p = re.compile(r'''
+        \<p\>\s*Lista\s+wypunktowana:\s*\<\/p\>
+        ''', re.VERBOSE)
+        
+        self.assertEqual(3, len(r_li.findall(smc.get_output())))
+        self.assertEqual(1, len(r_p.findall(smc.get_output())))
+
+    def test_t2t_enum(self):
+        text = '''
+        Lista numerowana:
+        + jeden
+        + dwa
+        + trzy
+        '''
+        smc = SimpleMarkupConverter(input=text)
+        smc.parse()
+        
+        r_li = re.compile(r'''
+        \<li\>.+?\<\/li\>
+        ''', re.DOTALL | re.VERBOSE)
+                
+        r_p = re.compile(r'''
+        \<p\>\s*Lista\s+numerowana:\s*\<\/p\>
+        ''', re.VERBOSE)
+        
+        self.assertEqual(3, len(r_li.findall(smc.get_output())))
+        self.assertEqual(1, len(r_p.findall(smc.get_output())))
 
 if __name__ == '__main__':
     unittest.main()
