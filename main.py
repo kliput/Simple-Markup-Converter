@@ -17,12 +17,12 @@
 # You should have received a copy of the GNU General Public License
 # along with SimpleMarkupConverter.  If not, see <http://www.gnu.org/licenses/>.
 
-from ply import lex, yacc
+from ply import lex
 from translator.dummy import PassTranslator
 from translator.hello import HelloTranslator
 from translator.txt2tags import Txt2TagsToXML
+import argparse
 import logging
-import sys
 
 class Exit(object):
     SUCCESS = 0
@@ -30,15 +30,16 @@ class Exit(object):
     WRONG_CMD = 2
     TRANSLATION_ERROR = 3
     PARSER_CONSTRUCTION_FAIL = 4
+    NO_INPUT = 5
     
     
 class SimpleMarkupConverter(object):
-
-    # czy obiekt ma przechowywać tekst wyjściowy po start()?
-    store_output = True
     
-    # przechowywany tekst wyjściowy jeśli store_output == True
+    # przechowywany tekst wyjściowy po parse()
     output = ''
+
+    # flaga, czy wykonano już parsowanie
+    is_parsed = False
 
     # stałe kierunku translacji
     IN = "input"
@@ -56,44 +57,33 @@ class SimpleMarkupConverter(object):
 
     def __init__(self, **kwargs):
         self.log = logging.getLogger(self.__class__.__name__)
-        logging.basicConfig(format='%(levelname)s[%(name)s]: %(message)s', level=logging.DEBUG)
         
-        if 'store_output' in kwargs:
-            self.store_output = True
-            self.log.debug('store_output turned on')
-
-        if 'input' in kwargs and 'file' in kwargs:
-            self.log.warn('"input" and "file" parameters specified, using only input')
+        log_level = logging.INFO
+        
+        if 'verbose' in kwargs:
+            if kwargs['verbose'] == True:
+                log_level = logging.DEBUG
+                        
+        logging.basicConfig(format='%(levelname)s[%(name)s]: %(message)s', level=log_level)
 
         if 'input' in kwargs:
             self.input = kwargs['input']
-        elif 'file' in kwargs:
-            # TODO: parametry wywołania - parsing:
-            # ./smc [-o output_file] --iformat=code_input --oformat=code_output input_file
-            # -o plik wyjściowy (opcjonalne, może wypisać na stdout)
-            # -iformat kod_formatu_wejściowego
-            # -oformat kod_formaty_wyjściowego
-            # kody: txt2tags, textile, dokuwiki, html (tylko wyjściowe)
-            
-            # otworzenie pliku z parametru
-            try:
-                f = open(kwargs['file'], "r")
-            except Exception as e:
-                print("File open error: %s" % str(e))
-                return Exit.FILE_ERROR
-            
-            # odczyt pliku
-            try:
-                self.input = f.read()
-            except Exception as e:
-                print("File read error: %s" % str(e))
-                return Exit.FILE_ERROR
-            
-        # TODO: wczytanie z linii komend
-        # wybór odpowiednich translatorów wejściowych/wyjściowych
+        else:
+            self.log.error('No input specified.')
+            return(Exit.NO_INPUT)
+
+
         file_format = {}
-        file_format[self.IN] = "txt2tags"
-        file_format[self.OUT] = "dummy"
+        try:
+            file_format[self.IN] = kwargs['input_t']
+        except KeyError:
+            self.log.error('No input translator specified')
+            return Exit.WRONG_CMD
+        try:
+            file_format[self.OUT] = kwargs['output_t']
+        except KeyError:
+            self.log.error('No output translator specified')
+            return Exit.WRONG_CMD
         
         self.translator = {}
         
@@ -112,9 +102,10 @@ class SimpleMarkupConverter(object):
             # błąd w konstrukcji translatora
             print("Construction of %s parser %s failed: %s" % (direction, translator_type.__name__, e))
             return Exit.PARSER_CONSTRUCTION_FAIL
-                
 
     def get_output(self):
+        if not self.is_parsed:
+            self.log.warn('get_output: parse() was not invoked!')
         return self.output
     
     def parse(self):
@@ -128,12 +119,10 @@ class SimpleMarkupConverter(object):
             
             if self.input == None:
                 raise Exception("None parser output")
-                
-            # TODO: możliwy tryb wyjścia do pliku
-#            print(text)
             
-            if self.store_output:
-                self.output = text
+            self.output = text
+            
+            self.is_parsed = True
             
             return Exit.SUCCESS
         except lex.LexError as e:
@@ -146,7 +135,45 @@ class SimpleMarkupConverter(object):
 
 # program główny
 if __name__ == '__main__':
+    ap = argparse.ArgumentParser()
+    ap.add_argument('input_type', help='input markup language: ')
+    ap.add_argument('output_type', help='output markup language: txt2tags')
+    ap.add_argument('-o', '--output_file', help='output file path')
+    ap.add_argument('input_file', help='input file')
+    ap.add_argument('-v', '--verbose', action='store_true', default=False, help='print debug messages')    
+    res = ap.parse_args()
+    
+    # otworzenie pliku z parametru
+    try:
+        f = open(res.input_file, "r")
+    except Exception as e:
+        print("File open error: %s" % str(e))
+        exit(Exit.FILE_ERROR)
+    
+    # odczyt pliku
+    try:
+        text_input = f.read()
+    except Exception as e:
+        print("File read error: %s" % str(e))
+        exit(Exit.FILE_ERROR)
+    
     # konstrukcja z plikiem wejściowycm
-    smc = SimpleMarkupConverter(store_output=True, file=(' '.join(sys.argv[1:])))
-    smc.parse()
-    print(smc.get_output())
+    smc = SimpleMarkupConverter(
+                                input=text_input,
+                                input_t=res.input_type,
+                                output_t=res.output_type,
+                                verbose=res.verbose
+                                )
+    exit_code = smc.parse()
+    
+    if exit_code == Exit.SUCCESS:
+        if res.output_file:
+            f = open(res.output_file, 'w')
+            f.write(smc.get_output())
+            f.close()
+        else:
+            print(smc.get_output())
+    else:
+        print('An error occured while parsing.')
+        
+    exit(exit_code)
