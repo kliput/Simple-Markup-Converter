@@ -23,6 +23,10 @@ class HtmlToTxt2Tags(Translator):
         'ITALIC_E',
         'UNDERLINE_S',
         'UNDERLINE_E',
+        'UL_S',
+        'UL_E',
+        'LI_S',
+        'LI_E',
         'WORD',
     )
     
@@ -31,6 +35,8 @@ class HtmlToTxt2Tags(Translator):
         ('b', 'inclusive'), # <b>...
         ('i', 'inclusive'), # <i>...
         ('u', 'inclusive'), # <u>...
+        ('ul', 'inclusive'), # <ul>...
+        ('li', 'inclusive'), # <li>...
     )
     
     t_ANY_ignore = ' \t\n'
@@ -95,11 +101,40 @@ class HtmlToTxt2Tags(Translator):
         self.log.debug(r'</u>')
         return t
 
+    # <ul>
+    
+    def t_INITIAL_UL_S(self, t):
+        r'\<ul\>'
+        t.lexer.push_state('ul')
+        self.log.debug(r'<ul>')
+        return t
+
+    def t_ul_UL_E(self, t):
+        r'\<\/ul\>'
+        t.lexer.pop_state()
+        self.log.debug(r'</ul>')
+        return t
+
+    # <li>
+    
+    def t_ul_LI_S(self, t):
+        r'\<li\>'
+        t.lexer.push_state('li')
+        self.log.debug(r'<li>')
+        return t
+
+    def t_li_LI_E(self, t):
+        r'\<\/li\>'
+        t.lexer.pop_state()
+        self.log.debug(r'</li>')
+        return t
+
     # ------ słowa ------
     
-    # ten token powinien być wykrywany w stanach dla każdego taga
-    # słowo, po którym następuje koniec jakiegoś taga
-    def t_p_b_i_u_WORD(self, t):
+    # Ten token powinien być wykrywany w stanach dla każdego taga,
+    # w którym może bezpośrednio leżeć słowo.
+    # Słowo, po którym następuje koniec jakiegoś taga.
+    def t_p_b_i_u_li_WORD(self, t):
         r'[^\s]+?(?=\s*\<\/)'
         self.log.debug('WORD tag end token: ' + t.value)
         return t
@@ -133,8 +168,9 @@ class HtmlToTxt2Tags(Translator):
     def p_block_par(self, p):
         '''
         block    : paragraph
+                    | list
         '''
-        self.log.debug('block: par (%s)' % (p[1]))
+        self.log.debug('block: (...) (%s)' % (p[1]))
         p[0] = '%s' % (p[1])
         
     def p_paragraph(self, p):
@@ -182,7 +218,7 @@ class HtmlToTxt2Tags(Translator):
         self.log.debug(r'plain single word (%s)' % (p[1]))
         p[0] = p[1]
 
-    # tagi formatowania
+    # --- obsługa tagów formatowania ---
 
     def p_bold(self, p):
         '''
@@ -205,4 +241,33 @@ class HtmlToTxt2Tags(Translator):
         self.log.debug(r'underline <u> content (%s) </u>' % (p[2]))
         p[0] = '__%s__' % (p[2])
     
+    # ------
     
+    def p_list(self, p):
+        '''
+        list    : UL_S list_content UL_E
+        '''
+        self.log.debug(r'list <ul> list_content (%s) </ul>' % (p[2]))
+        p[0] = '%s\n\n\n' % (p[2])
+        
+    def p_list_content(self, p):
+        '''
+        list_content    : list_content list_pos 
+        '''
+        self.log.debug(r'list_content list_content (%s) list_pos (%s)' % (p[1], p[2]))
+        p[0] = '%s\n%s' % (p[1], p[2])
+        
+    def p_list_content_single(self, p):
+        '''
+        list_content    : list_pos
+        '''
+        self.log.debug(r'list_content list_pos (%s)' % (p[1]))
+        p[0] = p[1]
+        
+    def p_list_pos(self, p):
+        '''
+        list_pos    : LI_S content LI_E
+        '''
+        self.log.debug(r'list_pos <li> content (%s) </li>' % (p[2]))
+        p[0] = '- %s' % (p[2])
+        
