@@ -19,7 +19,6 @@
 
 from ply import lex
 from translator.dummy import PassTranslator
-from translator.hello import HelloTranslator
 from translator.txt2tags import Txt2TagsToXML
 import argparse
 import logging
@@ -49,8 +48,8 @@ class SimpleMarkupConverter(object):
     translator_map = {
                       "dummy":
                       {IN: PassTranslator, OUT: PassTranslator },
-                      "hello":
-                      {IN: HelloTranslator},
+                      "html":
+                      {OUT: PassTranslator},
                       "txt2tags":
                       {IN: Txt2TagsToXML},
                     }
@@ -138,7 +137,7 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument('input_type', help='input markup language: ')
     ap.add_argument('output_type', help='output markup language: txt2tags')
-    ap.add_argument('-o', '--output_file', help='output file path')
+    ap.add_argument('-o', '--output_file', help='output file path: html')
     ap.add_argument('input_file', help='input file')
     ap.add_argument('-v', '--verbose', action='store_true', default=False, help='print debug messages')    
     res = ap.parse_args()

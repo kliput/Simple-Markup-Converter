@@ -73,7 +73,7 @@ class Txt2TagsToXML(Translator):
     
     def t_INITIAL_bs_is_UNDERLINE_S(self, t):
         r'\_\_(?=[^\s])'
-        self.log.debug('>>')
+        self.log.debug('__start')
         t.lexer.push_state('us')
         return t
     
@@ -86,11 +86,17 @@ class Txt2TagsToXML(Translator):
     def t_tagend_BOLD_E_I(self, t):
         r'\*\*(?=\/\/)'
         self.log.debug('t_be_BOLD_E_I: ' + t.value)
+        t.lexer.pop_state() # tag end
+        t.lexer.pop_state() # tag start
+        t.lexer.push_state('tagend')
         return t
 
     # **__
     def t_tagend_BOLD_E_U(self, t):
         r'\*\*(?=\_\_)'
+        t.lexer.pop_state() # tag end
+        t.lexer.pop_state() # tag start
+        t.lexer.push_state('tagend')
         return t
     
     # Znacznik kończący bold, musi go poprzedzać jakiś znak.
@@ -98,8 +104,10 @@ class Txt2TagsToXML(Translator):
     # do jakiegoś innego tokena. W tym celu używa się flagi format['bold'].  
     def t_tagend_BOLD_E(self, t):
         r'\*\*'
-        # zdjęcie stanu be - koniec bold
+        self.log.debug('**<- ' + str(t.lexer.lexstatestack))
+        # zdjęcie stanu tagend - koniec bold
         t.lexer.pop_state()
+        t.lexer.pop_state() # tag start
         self.log.debug('t_be_BOLD_E: ' + t.value)
         return t
 
@@ -109,11 +117,17 @@ class Txt2TagsToXML(Translator):
     def t_tagend_ITALIC_E_B(self, t):
         r'\/\/(?=\*\*)'
         self.log.debug('t_ITALIC_E_B: ' + t.value)
+        t.lexer.pop_state() # tag end
+        t.lexer.pop_state() # tag start
+        t.lexer.push_state('tagend')
         return t
 
     # //__
     def t_tagend_ITALIC_E_U(self, t):
         r'\/\/(?=\_\_)'
+        t.lexer.pop_state() # tag end
+        t.lexer.pop_state() # tag start
+        t.lexer.push_state('tagend')
         return t
 
     # Analogicznie do t_tagend_BOLD_E
@@ -121,6 +135,7 @@ class Txt2TagsToXML(Translator):
         r'\/\/'
         # zdjęcie stanu ie - koniec italic
         t.lexer.pop_state()
+        t.lexer.pop_state() # tag start
         self.log.debug('t_ie_ITALIC_E: ' + t.value)
         return t
     
@@ -129,16 +144,24 @@ class Txt2TagsToXML(Translator):
     # __**
     def t_tagend_UNDERLINE_E_B(self, t):
         r'\_\_(?=\*\*)'
+        self.log.debug('__->** ' + str(t.lexer.lexstatestack))
+        t.lexer.pop_state() # tag end
+        t.lexer.pop_state() # tag start
+        t.lexer.push_state('tagend')
         return t
 
     # //__
     def t_tagend_UNDERLINE_E_I(self, t):
         r'\_\_(?=\/\/)'
+        t.lexer.pop_state() # tag end
+        t.lexer.pop_state() # tag start
+        t.lexer.push_state('tagend')
         return t
 
     # Analogicznie do t_tagend_BOLD_E
     def t_tagend_UNDERLINE_E(self, t):
         r'\_\_'
+        t.lexer.pop_state()
         t.lexer.pop_state()
         return t
 
@@ -210,7 +233,7 @@ class Txt2TagsToXML(Translator):
     def t_bs_is_us_WORD(self, t):
         r'[^\s]+?(?=(\*\*)|(\/\/)|(\_\_))'
         # lexer gotowy na pobranie znaków zamykających bold
-        t.lexer.begin('tagend')
+        t.lexer.push_state('tagend')
         self.log.debug('WORD ending tag token: ' + t.value)
         return t
 
