@@ -25,6 +25,8 @@ class HtmlToTxt2Tags(Translator):
         'UNDERLINE_E',
         'UL_S',
         'UL_E',
+        'OL_S',
+        'OL_E',
         'LI_S',
         'LI_E',
         'WORD',
@@ -36,6 +38,7 @@ class HtmlToTxt2Tags(Translator):
         ('i', 'inclusive'), # <i>...
         ('u', 'inclusive'), # <u>...
         ('ul', 'inclusive'), # <ul>...
+        ('ol', 'inclusive'), # <ol>...
         ('li', 'inclusive'), # <li>...
     )
     
@@ -115,9 +118,23 @@ class HtmlToTxt2Tags(Translator):
         self.log.debug(r'</ul>')
         return t
 
+    # <ol>
+    
+    def t_INITIAL_OL_S(self, t):
+        r'\<ol\>'
+        t.lexer.push_state('ol')
+        self.log.debug(r'<ol>')
+        return t
+
+    def t_ol_OL_E(self, t):
+        r'\<\/ol\>'
+        t.lexer.pop_state()
+        self.log.debug(r'</ol>')
+        return t
+
     # <li>
     
-    def t_ul_LI_S(self, t):
+    def t_ul_ol_LI_S(self, t):
         r'\<li\>'
         t.lexer.push_state('li')
         self.log.debug(r'<li>')
@@ -169,6 +186,7 @@ class HtmlToTxt2Tags(Translator):
         '''
         block    : paragraph
                     | list
+                    | enum
         '''
         self.log.debug('block: (...) (%s)' % (p[1]))
         p[0] = '%s' % (p[1])
@@ -243,6 +261,8 @@ class HtmlToTxt2Tags(Translator):
     
     # ------
     
+    # --- obsługa listy wypunktowanej ---
+    
     def p_list(self, p):
         '''
         list    : UL_S list_content UL_E
@@ -270,4 +290,34 @@ class HtmlToTxt2Tags(Translator):
         '''
         self.log.debug(r'list_pos <li> content (%s) </li>' % (p[2]))
         p[0] = '- %s' % (p[2])
+        
+    # --- obsługa listy numerowanej ---
+    
+    def p_enum(self, p):
+        '''
+        enum    : OL_S enum_content OL_E
+        '''
+        self.log.debug(r'enum <ol> enum_content (%s) </ol>' % (p[2]))
+        p[0] = '%s\n\n\n' % (p[2])
+        
+    def p_enum_content(self, p):
+        '''
+        enum_content    : enum_content enum_pos 
+        '''
+        self.log.debug(r'enum_content enum_content (%s) enum_pos (%s)' % (p[1], p[2]))
+        p[0] = '%s\n%s' % (p[1], p[2])
+        
+    def p_enum_content_single(self, p):
+        '''
+        enum_content    : enum_pos
+        '''
+        self.log.debug(r'enum_content enum_pos (%s)' % (p[1]))
+        p[0] = p[1]
+        
+    def p_enum_pos(self, p):
+        '''
+        enum_pos    : LI_S content LI_E
+        '''
+        self.log.debug(r'enum_pos <li> content (%s) </li>' % (p[2]))
+        p[0] = '+ %s' % (p[2])
         
