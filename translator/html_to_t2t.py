@@ -41,6 +41,7 @@ class HtmlToTxt2Tags(Translator):
         'H_S',
         'H_E',
         'WORD',
+        'BR',
     )
     
     states = (
@@ -67,6 +68,12 @@ class HtmlToTxt2Tags(Translator):
     # === TOKENY ===
     
     # ------ tagi ------
+    
+    # <br/>
+    def t_ANY_BR(self, t):
+        r'\<br\/\>'
+        t.value = r'\\'
+        return t
     
     # <p>
     
@@ -306,6 +313,7 @@ class HtmlToTxt2Tags(Translator):
     def p_plain(self, p):
         '''
         plain    : plain WORD
+                    | plain BR
         '''
         self.log.debug(r'plain multi (%s) word (%s)' % (p[1], p[2]))
         p[0] = p[1] + ' ' + p[2]
@@ -313,6 +321,7 @@ class HtmlToTxt2Tags(Translator):
     def p_plain_single(self, p):
         '''
         plain   : WORD
+                | BR
         '''
         self.log.debug(r'plain single word (%s)' % (p[1]))
         p[0] = p[1]

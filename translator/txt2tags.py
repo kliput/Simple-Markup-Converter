@@ -30,6 +30,7 @@ class Txt2TagsToHTML(Translator):
         'BULLET2',
         'NUM_BULLET1',
         'NUM_BULLET2',
+        'BREAKLINE',
     )
     
     states = (
@@ -37,6 +38,7 @@ class Txt2TagsToHTML(Translator):
         ('is', 'inclusive'), # italic started
         ('us', 'inclusive'), # underline started
         ('tagend', 'exclusive'), # gotowość do parsowana taga zamykającego formatowanie
+        ('break', 'exclusive'), # gotowość do parsowania BREAKLINE
         ('head1', 'exclusive'), # nagłówek
         ('head2', 'exclusive'), # nagłówek
         ('head3', 'exclusive'), # nagłówek
@@ -210,7 +212,14 @@ class Txt2TagsToHTML(Translator):
         return t
 
 
-    # --- WORD ---
+    # --- WORD, BREAKLINE ---
+
+    # łamanie linii
+    def t_ANY_break_BREAKLINE(self, t):
+        r'\\\\'
+        self.log.debug('BREAKLINE')
+        t.value = r'<br/>'
+        return t
 
     # Szukamy pierwszego wystąpienia zamykającego taga, 
     # który jest poprzedzony przynajmniej jednym dowolnym znakiem.
@@ -232,7 +241,14 @@ class Txt2TagsToHTML(Translator):
     # Słowo wykrywane we wszystkich trybach
     def t_ANY_WORD(self, t):
         r'[^\s]+'
-        self.log.debug('WORD normal token: ' + t.value);
+        # sprawdzenie, czy od razu po słowie nie następuje
+        # znacznik łamania linii
+        check_break = re.match(r'(\w+)(?=\\\\)', t.value)
+        if check_break:
+            # odcięcie \\ od słowa
+            t.value = check_break.group(0)
+            t.lexer.lexpos -= 2
+        self.log.debug('WORD normal token: ' + t.value)
         return t
 
     # --- NOWE LINIE
@@ -481,6 +497,7 @@ class Txt2TagsToHTML(Translator):
     def p_plain(self, p):
         '''
         plain    : plain WORD
+                    | plain BREAKLINE
         '''
         self.log.debug('plain: plain (%s) WORD (%s)' % (p[1], p[2]))
         # między dwoma ciągami znaków jest zawsze pojedyncza spacja
@@ -489,6 +506,7 @@ class Txt2TagsToHTML(Translator):
     def p_plain_last(self, p):
         '''
         plain    : WORD
+                    | BREAKLINE
         '''
         self.log.debug('plain: WORD (%s)' % p[1])
         p[0] = p[1]

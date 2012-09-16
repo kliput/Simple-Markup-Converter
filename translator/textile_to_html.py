@@ -356,7 +356,7 @@ class TextileToHTML(Translator):
         paragraph   : paragraph NEWLINE line_content
         '''
         self.log.debug('pc: pc %s NL lc %s' % (p[1], p[3]))
-        p[0] = p[1] + '\n' + p[3]
+        p[0] = p[1] + ' <br/> ' + p[3]
         
     # Zawartość pojedynczej linii (wiele elementów)
     def p_line_content(self, p):
