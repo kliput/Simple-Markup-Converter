@@ -25,7 +25,6 @@ class TextileToHTML(Translator):
         'UNDERLINE_E_E',
         'WORD',
         'HEADING_S',
-        'HEADING_E',
         'BULLET1',
         'BULLET2',
         'NUM_BULLET1',
@@ -37,11 +36,6 @@ class TextileToHTML(Translator):
         ('is', 'inclusive'), # italic started
         ('us', 'inclusive'), # underline started
         ('tagend', 'exclusive'), # gotowość do parsowana taga zamykającego formatowanie
-        ('head1', 'exclusive'), # nagłówek
-        ('head2', 'exclusive'), # nagłówek
-        ('head3', 'exclusive'), # nagłówek
-        ('head4', 'exclusive'), # nagłówek
-        ('head5', 'exclusive'), # nagłówek
     )
     
 #    t_ignore = r'\ \t'
@@ -104,7 +98,7 @@ class TextileToHTML(Translator):
 
     # --- ITALIC ---
 
-    # //__ //**
+    # __+ __**
     def t_tagend_ITALIC_E_E(self, t):
         r'\_\_(?=\+|\*\*)'
         t.lexer.pop_state() # tag end
@@ -140,49 +134,14 @@ class TextileToHTML(Translator):
 
     # --- HEADING ---
 
+    # np.: h1. Nagłówek
     def t_HEADING_S(self, t):
-        r'={1,5}'
-        lvl = t.value.count('=')
-        t.lexer.push_state('head%s' % str(lvl))
-        t.value = '<h%s>' % str(lvl)
-        self.log.debug('H>')
+        r'^h\d\.\ '
+        lvl = re.match(r'h(\d)\.\ ', t.value).group(1)
+        t.value = 'h%s' % lvl
+        self.log.debug('Heading start level: %s' % (lvl))
         return t
     
-    def t_head1_HEADING_E(self, t):
-        r'='
-        t.lexer.pop_state()
-        t.value = '</h1>'
-        self.log.debug('<H1')
-        return t
-
-    def t_head2_HEADING_E(self, t):
-        r'=='
-        t.lexer.pop_state()
-        t.value = '</h2>'
-        self.log.debug('<H2')
-        return t
-
-    def t_head3_HEADING_E(self, t):
-        r'==='
-        t.lexer.pop_state()
-        t.value = '</h3>'
-        self.log.debug('<H3')
-        return t
-
-    def t_head4_HEADING_E(self, t):
-        r'===='
-        t.lexer.pop_state()
-        t.value = '</h4>'
-        self.log.debug('<H4')
-        return t
-    
-    def t_head5_HEADING_E(self, t):
-        r'====='
-        t.lexer.pop_state()
-        t.value = '</h5>'
-        self.log.debug('<H5')
-        return t
-
     # --- WYPUNKTOWANIE ---
     
     # wg specyfikacji po - musi wystąpić dokładnie jedna spacja po -
@@ -422,14 +381,18 @@ class TextileToHTML(Translator):
         '''
         self.log.debug('lc BLANK')
         p[0] = ''
-        
+    
+    # --- nagłówki ---    
     
     def p_heading(self, p):
         '''
-        heading    : HEADING_S plain HEADING_E
+        heading    : HEADING_S paragraph
         '''
-        p[0] = '%s%s%s' % (p[1], p[2], p[3])
-            
+        p[0] = r'<%s>%s</%s>' % (p[1], p[2], p[1])
+    
+    
+    # --- tekst i formatowanie
+    
     def p_element(self, p):
         '''
         element    : plain 
@@ -439,7 +402,7 @@ class TextileToHTML(Translator):
         '''
         self.log.debug('element: (...) (%s)' % (p[1]))
         p[0] = p[1]
-        
+    
     def p_bold(self, p):
         '''
         bold    : BOLD_S line_content bold_end
