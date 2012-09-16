@@ -26,8 +26,9 @@ class Txt2TagsToXML(Translator):
         'WORD',
         'HEADING_S',
         'HEADING_E',
-        'BULLET',
-        'NUM_BULLET',
+        'BULLET1',
+        'BULLET2',
+#        'NUM_BULLET',
     )
     
     states = (
@@ -183,21 +184,25 @@ class Txt2TagsToXML(Translator):
 
     # --- WYPUNKTOWANIE ---
     
-    # wg specyfikacji po - musi wystąpić dokładnie
-    def t_INITIAL_BULLET(self, t):
-        r'^(\ )*-\ (?=\S)'
+    # wg specyfikacji po - musi wystąpić dokładnie jedna spacja po -
+    def t_INITIAL_BULLET1(self, t):
+        r'^-\ (?=\S)'
         self.log.debug('Bullet: [%s]' % (t.value))
-        lvl = re.match(r'^(( )*)-( )', t.value).group(1).count(' ')
-        self.log.debug('Bullet lvl: %s' % (str(lvl)))
+        return t
+    
+    # drugi poziom wypunktowania
+    def t_INITIAL_BULLET2(self, t):
+        r'^(\ )+-\ (?=\S)'
+        self.log.debug('Bullet II: [%s]' % (t.value))
         return t
 
-    # wg specyfikacji po - musi wystąpić dokładnie
-    def t_NUM_BULLET(self, t):
-        r'^(\ )*\+\ (?=\S)'
-        self.log.debug('Number bullet: [%s]' % (t.value))
-        lvl = re.match(r'^(( )*)\+( )', t.value).group(1).count(' ')
-        self.log.debug('Number bullet lvl: %s' % (str(lvl)))
-        return t
+#    # wg specyfikacji po - musi wystąpić dokładnie jedna spacja po +
+#    def t_NUM_BULLET(self, t):
+#        r'^(\ )*\+\ (?=\S)'
+#        self.log.debug('Number bullet: [%s]' % (t.value))
+#        lvl = re.match(r'^(( )*)\+( )', t.value).group(1).count(' ')
+#        self.log.debug('Number bullet lvl: %s' % (str(lvl)))
+#        return t
 
     # --- WORD ---
 
@@ -261,9 +266,9 @@ class Txt2TagsToXML(Translator):
     def p_block(self, p):
         '''
         block    : heading
-                    | list
-                    | enum
+                    | list1
         '''
+#                    | enum
         self.log.debug('block: %s' % (p[1]))
         p[0] = p[1]
 
@@ -280,53 +285,88 @@ class Txt2TagsToXML(Translator):
     def p_block_par_head(self, p):
         '''
         block    : paragraph heading
-                | paragraph list
-                | paragraph enum
+                | paragraph list1
         '''
+#                | paragraph enum
+#        '''
         self.log.debug('block: par (%s) other (%s)' %(p[1], p[2]))
         p[0] = '<p>%s</p>\n%s' % (p[1], p[2])
 
     # === lista ===
     
     # opakowanie listy w tag <ul>
-    def p_list(self, p):
+    # pierwszy stopień listy - wewnątrz może być inna lista
+    def p_list1(self, p):
         '''
-        list    : list_pos
+        list1    : list_pos1
         '''
         p[0] = '<ul>%s</ul>' % (p[1])
-    
-    def p_list_pos(self, p):
-        '''
-        list_pos    : list_pos BULLET paragraph
-        '''
-        p[0] = '%s\n<li>%s</li>' % (p[1], p[3])
 
-    def p_list_pos_single(self, p):
+    # opakowanie listy w tag <ul>
+    def p_list2(self, p):
         '''
-        list_pos    : BULLET paragraph
+        list2    : list_pos2
         '''
-        p[0] = '<li>%s</li>' % p[2]
+        p[0] = '<ul>%s</ul>' % (p[1])
 
-    # === lista numerowana ===
-    
-    # opakowanie listy numerowanej w tag <ol>
-    def p_enum(self, p):
+    def p_list_pos1(self, p):
         '''
-        enum    : enum_pos
+        list_pos1    : list_pos1 list_content1
+                        | list_pos1 list2
         '''
-        p[0] = '<ol>%s</ol>' % (p[1])
-    
-    def p_enum_pos(self, p):
-        '''
-        enum_pos    : enum_pos NUM_BULLET paragraph
-        '''
-        p[0] = '%s\n<li>%s</li>' % (p[1], p[3])
+        p[0] = '%s\n%s' % (p[1], p[2])
 
-    def p_enum_pos_single(self, p):
+    def p_list_pos1_single(self, p):
         '''
-        enum_pos    : NUM_BULLET paragraph
+        list_pos1    : list_content1
+                        | list2
         '''
-        p[0] = '<li>%s</li>' % p[2]
+        p[0] = p[1]
+
+    def p_list_pos2(self, p):
+        '''
+        list_pos2    : list_pos2 list_content2
+        '''
+        p[0] = '%s\n%s' % (p[1], p[2])
+
+    def p_list_pos2_single(self, p):
+        '''
+        list_pos2    : list_content2
+        '''
+        p[0] = p[1]
+
+    def p_list_content1(self, p):
+        '''
+        list_content1    : BULLET1 paragraph
+        '''
+        p[0] = '<li>%s</li>' % (p[2])
+        
+    def p_list_content2(self, p):
+        '''
+        list_content2    : BULLET2 paragraph
+        '''
+        p[0] = '<li>%s</li>' % (p[2])
+
+#    # === lista numerowana ===
+#    
+#    # opakowanie listy numerowanej w tag <ol>
+#    def p_enum(self, p):
+#        '''
+#        enum    : enum_pos
+#        '''
+#        p[0] = '<ol>%s</ol>' % (p[1])
+#    
+#    def p_enum_pos(self, p):
+#        '''
+#        enum_pos    : enum_pos NUM_BULLET paragraph
+#        '''
+#        p[0] = '%s\n<li>%s</li>' % (p[1], p[3])
+#
+#    def p_enum_pos_single(self, p):
+#        '''
+#        enum_pos    : NUM_BULLET paragraph
+#        '''
+#        p[0] = '<li>%s</li>' % p[2]
 
     # === paragraph ===
 
