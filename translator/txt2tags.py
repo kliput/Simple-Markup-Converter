@@ -42,7 +42,7 @@ class Txt2TagsToXML(Translator):
         ('head5', 'exclusive'), # nagłówek
     )
     
-    t_ANY_ignore = ' \t'
+#    t_ignore = r'\ \t'
     
     # ------ tagi startujące formatowanie ------
     
@@ -184,15 +184,19 @@ class Txt2TagsToXML(Translator):
     # --- WYPUNKTOWANIE ---
     
     # wg specyfikacji po - musi wystąpić dokładnie
-    def t_BULLET(self, t):
-        r'-( )'
-        self.log.debug('Bullet')
+    def t_INITIAL_BULLET(self, t):
+        r'^(\ )*-\ (?=\S)'
+        self.log.debug('Bullet: [%s]' % (t.value))
+        lvl = re.match(r'^(( )*)-( )', t.value).group(1).count(' ')
+        self.log.debug('Bullet lvl: %s' % (str(lvl)))
         return t
 
     # wg specyfikacji po - musi wystąpić dokładnie
     def t_NUM_BULLET(self, t):
-        r'\+( )'
-        self.log.debug('Number bullet')
+        r'^(\ )*\+\ (?=\S)'
+        self.log.debug('Number bullet: [%s]' % (t.value))
+        lvl = re.match(r'^(( )*)\+( )', t.value).group(1).count(' ')
+        self.log.debug('Number bullet lvl: %s' % (str(lvl)))
         return t
 
     # --- WORD ---
@@ -228,6 +232,9 @@ class Txt2TagsToXML(Translator):
     # 2 lub więcej znaków nowej linii - oddziela akapit
     t_PAREND = '(\\n\\s*){2,}'
     
+    def t_ANY_WHITESPACE(self, t):
+        r'[ \t\r\f\v]+'
+        self.log.debug('whitespace')
     
     # ========================    
     # PARSER    
@@ -330,7 +337,7 @@ class Txt2TagsToXML(Translator):
         '''
         self.log.debug('pc: lc %s' % (p[1]))
         p[0] = p[1]
-    
+        
     # Zawartość akapitu ze znakami nowej linii wewnątrz
     def p_paragraph_wnl(self, p):
         '''
@@ -417,7 +424,7 @@ class Txt2TagsToXML(Translator):
                         |    UNDERLINE_E_E
         '''
         p[0] = p[1]
-    
+        
     def p_plain(self, p):
         '''
         plain    : plain WORD
