@@ -28,7 +28,8 @@ class Txt2TagsToXML(Translator):
         'HEADING_E',
         'BULLET1',
         'BULLET2',
-#        'NUM_BULLET',
+        'NUM_BULLET1',
+        'NUM_BULLET2',
     )
     
     states = (
@@ -187,28 +188,33 @@ class Txt2TagsToXML(Translator):
     # wg specyfikacji po - musi wystąpić dokładnie jedna spacja po -
     def t_INITIAL_BULLET1(self, t):
         r'^-\ (?=\S)'
-        self.log.debug('Bullet: [%s]' % (t.value))
+        self.log.debug('Bollet: [%s]' % (t.value))
         return t
     
     # drugi poziom wypunktowania
     def t_INITIAL_BULLET2(self, t):
         r'^(\ )+-\ (?=\S)'
-        self.log.debug('Bullet II: [%s]' % (t.value))
+        self.log.debug('Bollet II: [%s]' % (t.value))
+        return t
+    
+    # wg specyfikacji po - musi wystąpić dokładnie jedna spacja po -
+    def t_INITIAL_NUM_BULLET1(self, t):
+        r'^\+\ (?=\S)'
+        self.log.debug('Num bollet: [%s]' % (t.value))
+        return t
+    
+    # drugi poziom wypunktowania
+    def t_INITIAL_NUM_BULLET2(self, t):
+        r'^(\ )+\+\ (?=\S)'
+        self.log.debug('Num bollet II: [%s]' % (t.value))
         return t
 
-#    # wg specyfikacji po - musi wystąpić dokładnie jedna spacja po +
-#    def t_NUM_BULLET(self, t):
-#        r'^(\ )*\+\ (?=\S)'
-#        self.log.debug('Number bullet: [%s]' % (t.value))
-#        lvl = re.match(r'^(( )*)\+( )', t.value).group(1).count(' ')
-#        self.log.debug('Number bullet lvl: %s' % (str(lvl)))
-#        return t
 
     # --- WORD ---
 
     # Szukamy pierwszego wystąpienia zamykającego taga, 
     # który jest poprzedzony przynajmniej jednym dowolnym znakiem.
-    # Znaków taga nie bierzemy do wyniku wyrażenia regularnego
+    # Znaków taga nie bierzemy do wyniku wyrażenia regolarnego
     # - będą użyte przy pobraniu taga zamykającego.
     def t_bs_is_us_WORD(self, t):
         r'[^\s]+?(?=(\*\*)|(\/\/)|(\_\_))'
@@ -248,7 +254,7 @@ class Txt2TagsToXML(Translator):
     # === document ===
     
     # Dokument z wieloma akapitami
-    def p_document_multi(self, p):
+    def p_document_molti(self, p):
         '''
         document    : document block
         '''
@@ -267,8 +273,8 @@ class Txt2TagsToXML(Translator):
         '''
         block    : heading
                     | list1
+                    | enum1
         '''
-#                    | enum
         self.log.debug('block: %s' % (p[1]))
         p[0] = p[1]
 
@@ -286,87 +292,90 @@ class Txt2TagsToXML(Translator):
         '''
         block    : paragraph heading
                 | paragraph list1
+                | paragraph enum1
         '''
-#                | paragraph enum
-#        '''
         self.log.debug('block: par (%s) other (%s)' %(p[1], p[2]))
         p[0] = '<p>%s</p>\n%s' % (p[1], p[2])
 
     # === lista ===
     
-    # opakowanie listy w tag <ul>
-    # pierwszy stopień listy - wewnątrz może być inna lista
-    def p_list1(self, p):
+    # Opakowanie listy w tag <ol>
+    # Rozróżnienie I i II stopienia listy
+    def p_list(self, p):
         '''
         list1    : list_pos1
-        '''
-        p[0] = '<ul>%s</ul>' % (p[1])
-
-    # opakowanie listy w tag <ul>
-    def p_list2(self, p):
-        '''
         list2    : list_pos2
         '''
-        p[0] = '<ul>%s</ul>' % (p[1])
+        p[0] = '<ol>%s</ol>' % (p[1])
 
-    def p_list_pos1(self, p):
+    # Pozycja listy.
+    # Dla I poziomu: albo kolejna pozycja zwykła, albo zagnieżdżona lista
+    # Dla II poziomu: tylko kolejna pozycja zwykła
+    def p_list_pos(self, p):
         '''
         list_pos1    : list_pos1 list_content1
                         | list_pos1 list2
-        '''
-        p[0] = '%s\n%s' % (p[1], p[2])
-
-    def p_list_pos1_single(self, p):
-        '''
-        list_pos1    : list_content1
-                        | list2
-        '''
-        p[0] = p[1]
-
-    def p_list_pos2(self, p):
-        '''
         list_pos2    : list_pos2 list_content2
         '''
         p[0] = '%s\n%s' % (p[1], p[2])
 
-    def p_list_pos2_single(self, p):
+    # Pojedyncza pozycja listy, podobnie jak w p_list_pos.
+    def p_list_pos_single(self, p):
         '''
+        list_pos1    : list_content1
+                        | list2
         list_pos2    : list_content2
         '''
         p[0] = p[1]
 
-    def p_list_content1(self, p):
+    # Zwykła zawartość pozycji listy: punkt odpowiedniego poziomu i treść
+    def p_list_content(self, p):
         '''
         list_content1    : BULLET1 paragraph
-        '''
-        p[0] = '<li>%s</li>' % (p[2])
-        
-    def p_list_content2(self, p):
-        '''
         list_content2    : BULLET2 paragraph
         '''
         p[0] = '<li>%s</li>' % (p[2])
 
-#    # === lista numerowana ===
-#    
-#    # opakowanie listy numerowanej w tag <ol>
-#    def p_enum(self, p):
-#        '''
-#        enum    : enum_pos
-#        '''
-#        p[0] = '<ol>%s</ol>' % (p[1])
-#    
-#    def p_enum_pos(self, p):
-#        '''
-#        enum_pos    : enum_pos NUM_BULLET paragraph
-#        '''
-#        p[0] = '%s\n<li>%s</li>' % (p[1], p[3])
-#
-#    def p_enum_pos_single(self, p):
-#        '''
-#        enum_pos    : NUM_BULLET paragraph
-#        '''
-#        p[0] = '<li>%s</li>' % p[2]
+    # === lista numerowana ===
+    
+    # Opakowanie enumy numerowanej w tag <ol>
+    # Rozróżnienie I i II stopienia enumy
+    def p_enum(self, p):
+        '''
+        enum1    : enum_pos1
+        enum2    : enum_pos2
+        '''
+        p[0] = '<ol>%s</ol>' % (p[1])
+
+    # Pozycja enumy.
+    # Dla I poziomu: albo kolejna pozycja zwykła, albo zagnieżdżona enuma
+    # Dla II poziomu: tylko kolejna pozycja zwykła
+    def p_enum_pos(self, p):
+        '''
+        enum_pos1    : enum_pos1 enum_content1
+                        | enum_pos1 enum2
+        enum_pos2    : enum_pos2 enum_content2
+        '''
+        p[0] = '%s\n%s' % (p[1], p[2])
+
+    # Pojedyncza pozycja enumy, podobnie jak w p_enum_pos.
+    def p_enum_pos_single(self, p):
+        '''
+        enum_pos1    : enum_content1
+                        | enum2
+        enum_pos2    : enum_content2
+        '''
+        p[0] = p[1]
+
+    # Zwykła zawartość pozycji enumy: punkt odpowiedniego poziomu i treść
+    def p_enum_content(self, p):
+        '''
+        enum_content1    : NUM_BULLET1 paragraph
+        enum_content2    : NUM_BULLET2 paragraph
+        '''
+        p[0] = '<li>%s</li>' % (p[2])
+
+
 
     # === paragraph ===
 

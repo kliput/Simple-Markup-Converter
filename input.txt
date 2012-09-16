@@ -1,7 +1,9 @@
-= Lorem ipsum =
-== Sit dolor ==
++ lorem
+ - ipsum
+ - sit
++ dolor
 
-__**lorem** ipsum__
-
-//sit// **dolor**
-amet
+- amet
+ + lorem
+ + ipsum
+- sit

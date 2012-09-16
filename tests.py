@@ -16,7 +16,10 @@ class SimpleMarkupConverterTests(unittest.TestCase):
 
     # sprawdzenie prostego parsowania akapitów txt2tags na xml 
     def test_txt2tags_plain_par_to_html(self):
-        smc = SimpleMarkupConverter(input=open('tests/t2t_plain_3par.txt').read(),
+        f = open('tests/t2t_plain_3par.txt')
+        text = f.read()
+        f.close()
+        smc = SimpleMarkupConverter(input=text,
                                     input_t='txt2tags', output_t='html')
         # powodzenie w działaniu
         self.assertEqual(smc.parse(), Exit.SUCCESS)
@@ -27,7 +30,10 @@ class SimpleMarkupConverterTests(unittest.TestCase):
         self.assertEqual(output.count('<p>'), 3)
 
     def test_txt2tags_empty_to_html(self):
-        smc = SimpleMarkupConverter(input=open('tests/empty.txt').read(),
+        f = open('tests/empty.txt')
+        text = f.read()
+        f.close()
+        smc = SimpleMarkupConverter(input=text,
                                     input_t='txt2tags', output_t='html')
         # powodzenie w działaniu
         self.assertEqual(smc.parse(), Exit.SUCCESS)
@@ -169,6 +175,37 @@ class SimpleMarkupConverterTests(unittest.TestCase):
         
         self.assertEqual(3, len(r_li.findall(smc.get_output())))
         self.assertEqual(1, len(r_p.findall(smc.get_output())))
+        
+    def test_t2t_list_nested(self):
+        f = open('tests/t2t_list.txt')
+        text = f.read()
+        f.close()
+        smc = SimpleMarkupConverter(input=text,
+                                    input_t='txt2tags', output_t='html')
+        
+        self.assertEqual(smc.parse(), Exit.SUCCESS)
+        
+        print('----------')
+        print(smc.get_output())
+        print('----------')
+        
+        r_list = re.compile(r'''
+\<ul\>\s*\<li\>\s*lorem\s*
+\<\/li\>\s*
+\<ul\>\s*\<li\>\s*ipsum\s*
+\<\/li\>\s*
+\<li\>\s*sit\s*
+\<\/li\>\s*\<\/ul\>\s*
+\<li\>\s*dolor\s*
+\<\/li\>\s*
+\<li\>\s*amet\s*
+\<\/li\>\s*
+\<ul\>\s*\<li\>\s*lorem\s*
+\<\/li\>\s*\<\/ul\>\s*
+\<li\>\s*ipsum\s*\<\/li\>\s*\<\/ul\>
+        ''', re.VERBOSE)
+
+        self.assertEqual(1, len(r_list.findall(smc.get_output())))
 
 if __name__ == '__main__':
     unittest.main()
