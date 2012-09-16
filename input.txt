@@ -2,8 +2,3 @@
  - ipsum
  - sit
 + dolor
-
-- amet
- + lorem
- + ipsum
-- sit

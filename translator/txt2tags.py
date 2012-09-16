@@ -188,25 +188,25 @@ class Txt2TagsToXML(Translator):
     # wg specyfikacji po - musi wystąpić dokładnie jedna spacja po -
     def t_INITIAL_BULLET1(self, t):
         r'^-\ (?=\S)'
-        self.log.debug('Bollet: [%s]' % (t.value))
+        self.log.debug('Bullet: [%s]' % (t.value))
         return t
     
     # drugi poziom wypunktowania
     def t_INITIAL_BULLET2(self, t):
         r'^(\ )+-\ (?=\S)'
-        self.log.debug('Bollet II: [%s]' % (t.value))
+        self.log.debug('Bullet II: [%s]' % (t.value))
         return t
     
     # wg specyfikacji po - musi wystąpić dokładnie jedna spacja po -
     def t_INITIAL_NUM_BULLET1(self, t):
         r'^\+\ (?=\S)'
-        self.log.debug('Num bollet: [%s]' % (t.value))
+        self.log.debug('Num bullet: [%s]' % (t.value))
         return t
     
     # drugi poziom wypunktowania
     def t_INITIAL_NUM_BULLET2(self, t):
         r'^(\ )+\+\ (?=\S)'
-        self.log.debug('Num bollet II: [%s]' % (t.value))
+        self.log.debug('Num bullet II: [%s]' % (t.value))
         return t
 
 
@@ -214,7 +214,7 @@ class Txt2TagsToXML(Translator):
 
     # Szukamy pierwszego wystąpienia zamykającego taga, 
     # który jest poprzedzony przynajmniej jednym dowolnym znakiem.
-    # Znaków taga nie bierzemy do wyniku wyrażenia regolarnego
+    # Znaków taga nie bierzemy do wyniku wyrażenia regularnego
     # - będą użyte przy pobraniu taga zamykającego.
     def t_bs_is_us_WORD(self, t):
         r'[^\s]+?(?=(\*\*)|(\/\/)|(\_\_))'
@@ -254,7 +254,7 @@ class Txt2TagsToXML(Translator):
     # === document ===
     
     # Dokument z wieloma akapitami
-    def p_document_molti(self, p):
+    def p_document_multi(self, p):
         '''
         document    : document block
         '''
@@ -299,14 +299,14 @@ class Txt2TagsToXML(Translator):
 
     # === lista ===
     
-    # Opakowanie listy w tag <ol>
+    # Opakowanie listy w tag <ul>
     # Rozróżnienie I i II stopienia listy
     def p_list(self, p):
         '''
         list1    : list_pos1
         list2    : list_pos2
         '''
-        p[0] = '<ol>%s</ol>' % (p[1])
+        p[0] = '<ul>%s</ul>' % (p[1])
 
     # Pozycja listy.
     # Dla I poziomu: albo kolejna pozycja zwykła, albo zagnieżdżona lista
@@ -315,6 +315,7 @@ class Txt2TagsToXML(Translator):
         '''
         list_pos1    : list_pos1 list_content1
                         | list_pos1 list2
+                        | list_pos1 enum2
         list_pos2    : list_pos2 list_content2
         '''
         p[0] = '%s\n%s' % (p[1], p[2])
@@ -324,6 +325,7 @@ class Txt2TagsToXML(Translator):
         '''
         list_pos1    : list_content1
                         | list2
+                        | enum2
         list_pos2    : list_content2
         '''
         p[0] = p[1]
@@ -354,6 +356,7 @@ class Txt2TagsToXML(Translator):
         '''
         enum_pos1    : enum_pos1 enum_content1
                         | enum_pos1 enum2
+                        | enum_pos1 list2
         enum_pos2    : enum_pos2 enum_content2
         '''
         p[0] = '%s\n%s' % (p[1], p[2])
@@ -363,6 +366,7 @@ class Txt2TagsToXML(Translator):
         '''
         enum_pos1    : enum_content1
                         | enum2
+                        | list2
         enum_pos2    : enum_content2
         '''
         p[0] = p[1]
