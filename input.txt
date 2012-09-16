@@ -1,18 +1,7 @@
-= Prezentacja Txt2Tags =
-== Formatowanie ==
+= Lorem ipsum =
+== Sit dolor ==
 
-**Lorem __ipsum__** //sit// __dolor__ amet.
+__**lorem** ipsum__
 
-
-== Listy ==
-
-- pozycja 1
-- pozycja 2
-- wiele
-linii
-
-== Numeracja list ==
-
-+ pierwsza
-+ druga
-+ trzecia
+//sit// **dolor**
+amet

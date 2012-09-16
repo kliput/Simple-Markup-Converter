@@ -12,8 +12,17 @@ class HtmlToTxt2Tags(Translator):
     def __init__(self):
         super().__init__()
         self.log.debug('%s constructor' % self.__class__.__name__)
-        
+
+    # o ile ma zawiększyć następnym razem wcięcie listy
+    indent_next = 0
+    # aktualny poziom wcięcia listy
+    indent_lvl = -1
     
+    # zmiana aktualnego poziomu wcięcia
+    def change_indent(self):
+        self.indent_lvl += self.indent_next
+        self.indent_next = 0
+
     tokens = (
         'PAR_S',
         'PAR_E',
@@ -160,31 +169,37 @@ class HtmlToTxt2Tags(Translator):
         self.log.debug(r'</u>')
         return t
 
+    # --- listy ---
+
     # <ul>
     
-    def t_INITIAL_UL_S(self, t):
+    def t_INITIAL_ul_ol_UL_S(self, t):
         r'\<ul\>'
         t.lexer.push_state('ul')
+        self.indent_next = 1
         self.log.debug(r'<ul>')
         return t
 
     def t_ul_UL_E(self, t):
         r'\<\/ul\>'
         t.lexer.pop_state()
+        self.indent_next = -1
         self.log.debug(r'</ul>')
         return t
 
     # <ol>
     
-    def t_INITIAL_OL_S(self, t):
+    def t_INITIAL_ul_ol_OL_S(self, t):
         r'\<ol\>'
         t.lexer.push_state('ol')
+        self.indent_next = 1
         self.log.debug(r'<ol>')
         return t
 
     def t_ol_OL_E(self, t):
         r'\<\/ol\>'
         t.lexer.pop_state()
+        self.indent_next = -1
         self.log.debug(r'</ol>')
         return t
 
@@ -222,7 +237,7 @@ class HtmlToTxt2Tags(Translator):
         
     # ========================    
     # PARSER    
-    # ========================    
+    # ========================
     
     def p_document_multi(self, p):
         '''
@@ -262,7 +277,7 @@ class HtmlToTxt2Tags(Translator):
         paragraph    : PAR_S PAR_E
         '''
         self.log.debug('par <p></p> (empty)')
-        p[0] = '%s\n\n' % (p[2])
+        p[0] = '\n\n'
 
     def p_content(self, p):
         '''
@@ -333,8 +348,11 @@ class HtmlToTxt2Tags(Translator):
         '''
         list    : UL_S list_content UL_E
         '''
-        self.log.debug(r'list <ul> list_content (%s) </ul>' % (p[2]))
-        p[0] = '%s\n\n\n' % (p[2])
+        self.log.debug(r'list <ul> list_content (%s) </ul> lvl %s' % (p[2], self.indent_lvl))
+        if self.indent_lvl > -1: # koniec poziomu na liście
+            p[0] = '%s' % (p[2])
+        else:
+            p[0] = '%s\n\n\n' % (p[2]) # koniec całej listy
         
     def p_list_content(self, p):
         '''
@@ -355,7 +373,17 @@ class HtmlToTxt2Tags(Translator):
         list_pos    : LI_S content LI_E
         '''
         self.log.debug(r'list_pos <li> content (%s) </li>' % (p[2]))
-        p[0] = '- %s' % (p[2])
+        p[0] = '%s- %s' % (' '*self.indent_lvl, p[2])
+        self.change_indent()
+        
+    # lista zagnieżdżona
+    def p_list_pos_nested(self, p):
+        '''
+        list_pos    : list
+                    | enum
+        '''
+        self.log.debug(r'list_pos nested (%s)' % (p[1]))
+        p[0] = p[1]
         
     # --- obsługa listy numerowanej ---
     
@@ -364,7 +392,10 @@ class HtmlToTxt2Tags(Translator):
         enum    : OL_S enum_content OL_E
         '''
         self.log.debug(r'enum <ol> enum_content (%s) </ol>' % (p[2]))
-        p[0] = '%s\n\n\n' % (p[2])
+        if self.indent_lvl > -1: # koniec poziomu na liście
+            p[0] = '%s' % (p[2])
+        else:
+            p[0] = '%s\n\n\n' % (p[2]) # koniec całej listy
         
     def p_enum_content(self, p):
         '''
@@ -385,7 +416,16 @@ class HtmlToTxt2Tags(Translator):
         enum_pos    : LI_S content LI_E
         '''
         self.log.debug(r'enum_pos <li> content (%s) </li>' % (p[2]))
-        p[0] = '+ %s' % (p[2])
+        p[0] = '%s+ %s' % (' '*self.indent_lvl, p[2])
+        self.change_indent()
+        
+    def p_enum_pos_nested(self, p):
+        '''
+        enum_pos    : list
+                    | enum
+        '''
+        self.log.debug(r'enum_pos nested (%s)' % (p[1]))
+        p[0] = p[1]
         
     # --- obsługa nagłówków
     
