@@ -19,8 +19,9 @@
 
 from ply import lex
 from translator.dummy import PassTranslator
-from translator.txt2tags import Txt2TagsToXML
+from translator.txt2tags import Txt2TagsToHTML
 from translator.html_to_t2t import HtmlToTxt2Tags
+from translator.textile_to_html import TextileToHTML
 import argparse
 import logging
 
@@ -47,12 +48,14 @@ class SimpleMarkupConverter(object):
     
     # przechowuje odwzorowanie kodu_<input/output> -> klasa translatora
     translator_map = {
-                      "dummy":
+                      "pass":
                       {IN: PassTranslator, OUT: PassTranslator },
                       "html":
                       {OUT: PassTranslator},
                       "txt2tags":
-                      {IN: Txt2TagsToXML, OUT: HtmlToTxt2Tags},
+                      {IN: Txt2TagsToHTML, OUT: HtmlToTxt2Tags},
+                      "textile":
+                      {IN: TextileToHTML}
                     }
 
     def __init__(self, **kwargs):

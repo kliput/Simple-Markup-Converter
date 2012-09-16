@@ -14,6 +14,8 @@ class SimpleMarkupConverterTests(unittest.TestCase):
     def setUp(self):
         pass
 
+    # === Txt2Tags ===
+
     # sprawdzenie prostego parsowania akapitów txt2tags na xml 
     def test_txt2tags_plain_par_to_html(self):
         f = open('tests/t2t_plain_3par.txt')
@@ -185,10 +187,6 @@ class SimpleMarkupConverterTests(unittest.TestCase):
         
         self.assertEqual(smc.parse(), Exit.SUCCESS)
         
-        print('----------')
-        print(smc.get_output())
-        print('----------')
-        
         r_list = re.compile(r'''
 \<ul\>\s*\<li\>\s*lorem\s*
 \<\/li\>\s*
@@ -206,6 +204,31 @@ class SimpleMarkupConverterTests(unittest.TestCase):
         ''', re.VERBOSE)
 
         self.assertEqual(1, len(r_list.findall(smc.get_output())))
+
+    # TODO mieszane t2t ol/ul
+    
+    # TODO test dla t2t->t2t
+
+    # === Textile ===
+    
+    # formatowanie zagnieżdżone (bold<-italic)
+    def test_textile_formats1(self):
+        smc = SimpleMarkupConverter(input='**lorem __ipsum sit__ dolor** +amet+',
+                                    input_t='textile', output_t='html')
+        self.assertEqual(smc.parse(), Exit.SUCCESS)
+
+        print(smc.get_output())
+        
+        rx = re.compile(r'''
+        \<b\> \s* lorem \s* 
+        \<i\> \s* ipsum \s* sit \s* \<\/i\>
+        \s* dolor \s* \<\/b\>
+        \s* \<u\>amet\<\/u\> 
+        ''',  re.VERBOSE)
+        self.assertEqual(1, len(
+                                rx.findall(smc.get_output())
+                                ))
+    
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,9 +1,9 @@
 from translator.translator import Translator
 import re
 
-class Txt2TagsToHTML(Translator):
+class TextileToHTML(Translator):
     '''
-    Translator txt2tags -> XML (języka wewnętrznego)
+    Translator Textile -> HTML (języka wewnętrznego)
     '''
         
     def __init__(self):
@@ -64,16 +64,16 @@ class Txt2TagsToHTML(Translator):
     # znacznik rozpoczynający kursywę: //<znak>
     # TODO dodawać możliwe wszystkie stany inclusive
     def t_INITIAL_bs_us_ITALIC_S(self, t):
-        r'\/\/(?=[^\s])'
+        r'\_\_(?=[^\s])'
         # dorzucenie stanu otwartego italic
         t.lexer.push_state('is')
         self.log.debug('ITALIC_S token: ' + t.value)
         return t
     
     def t_INITIAL_bs_is_UNDERLINE_S(self, t):
-        r'\_\_(?=[^\s])'
-        self.log.debug('__start')
+        r'\+(?=[^\s])'
         t.lexer.push_state('us')
+        self.log.debug('UNDERLINE_S token: ' + t.value)
         return t
     
     # ------ tagi kończące formatowanie ------
@@ -84,7 +84,7 @@ class Txt2TagsToHTML(Translator):
     # **// **__
     def t_tagend_BOLD_E_E(self, t):
         r'\*\*(?=\/\/|\_\_)'
-        self.log.debug('t_be_BOLD_E_X: ' + t.value)
+        self.log.debug('t_be_BOLD_E_E: ' + t.value)
         t.lexer.pop_state() # tag end
         t.lexer.pop_state() # tag start
         t.lexer.push_state('tagend')
@@ -106,7 +106,7 @@ class Txt2TagsToHTML(Translator):
 
     # //__ //**
     def t_tagend_ITALIC_E_E(self, t):
-        r'\/\/(?=\_\_|\*\*)'
+        r'\_\_(?=\+|\*\*)'
         t.lexer.pop_state() # tag end
         t.lexer.pop_state() # tag start
         t.lexer.push_state('tagend')
@@ -114,7 +114,7 @@ class Txt2TagsToHTML(Translator):
 
     # Analogicznie do t_tagend_BOLD_E
     def t_tagend_ITALIC_E(self, t):
-        r'\/\/'
+        r'\_\_'
         # zdjęcie stanu ie - koniec italic
         t.lexer.pop_state()
         t.lexer.pop_state() # tag start
@@ -123,9 +123,9 @@ class Txt2TagsToHTML(Translator):
     
     # --- UNDERLINE ---
 
-    # __// __**
+    # +// +**
     def t_tagend_UNDERLINE_E_E(self, t):
-        r'\_\_(?=\/\/|\*\*)'
+        r'\+(?=\_\_|\*\*)'
         t.lexer.pop_state() # tag end
         t.lexer.pop_state() # tag start
         t.lexer.push_state('tagend')
@@ -133,7 +133,7 @@ class Txt2TagsToHTML(Translator):
 
     # Analogicznie do t_tagend_BOLD_E
     def t_tagend_UNDERLINE_E(self, t):
-        r'\_\_'
+        r'\+'
         t.lexer.pop_state()
         t.lexer.pop_state()
         return t
@@ -217,7 +217,7 @@ class Txt2TagsToHTML(Translator):
     # Znaków taga nie bierzemy do wyniku wyrażenia regularnego
     # - będą użyte przy pobraniu taga zamykającego.
     def t_bs_is_us_WORD(self, t):
-        r'[^\s]+?(?=(\*\*)|(\/\/)|(\_\_))'
+        r'[^\s]+?(?=(\*\*)|(\+)|(\_\_))'
         # lexer gotowy na pobranie znaków zamykających bold
         t.lexer.push_state('tagend')
         self.log.debug('WORD ending tag token: ' + t.value)
