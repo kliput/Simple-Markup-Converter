@@ -467,6 +467,7 @@ class Txt2TagsToHTML(Translator):
         bold_end    : BOLD_E
                     | BOLD_E_E
         '''
+        p[0] = p[1]
 
     def p_italic(self, p):
         '''

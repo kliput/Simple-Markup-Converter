@@ -30,8 +30,8 @@ class Translator(object):
         if text == '':
             return ''
         else:
-            # dodanie PAREND na końcu pliku - upraszcza gramatyki
-            text = text + '\n\n'
+            # dodanie nowej linii i końca akapitu na końcu pliku - upraszcza gramatyki
+            text = text + '\n\n\n'
             
 #            if self.debug == 0:
 #                print('Parsing:')

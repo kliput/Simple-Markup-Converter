@@ -12,7 +12,7 @@ class TextileToHTML(Translator):
         
     
     tokens = (
-        'PAREND',
+#        'PAREND',
         'NEWLINE',
         'BOLD_S',
         'BOLD_E',
@@ -36,6 +36,7 @@ class TextileToHTML(Translator):
         ('is', 'inclusive'), # italic started
         ('us', 'inclusive'), # underline started
         ('tagend', 'exclusive'), # gotowość do parsowana taga zamykającego formatowanie
+#        ('listpos', 'exclusive'), # pozycja na liście
     )
     
 #    t_ignore = r'\ \t'
@@ -144,27 +145,29 @@ class TextileToHTML(Translator):
     
     # --- WYPUNKTOWANIE ---
     
-    # wg specyfikacji po - musi wystąpić dokładnie jedna spacja po -
+    # wg specyfikacji po - musi wystąpić dokładnie jedna spacja po *
+    # nie jest wymagany znak drukowalny w linii wypunktowania
     def t_INITIAL_BULLET1(self, t):
-        r'^\*\ (?=\S)'
+        r'^\*\ '
         self.log.debug('Bullet: [%s]' % (t.value))
         return t
     
     # drugi poziom wypunktowania
     def t_INITIAL_BULLET2(self, t):
-        r'^\*(\*)+\ (?=\S)'
+        r'^\*(\*)+\ '
         self.log.debug('Bullet II: [%s]' % (t.value))
         return t
     
-    # wg specyfikacji po - musi wystąpić dokładnie jedna spacja po -
+    # wg specyfikacji po - musi wystąpić dokładnie jedna spacja po #
+    # nie jest wymagany znak drukowalny w linii wyliczenia
     def t_INITIAL_NUM_BULLET1(self, t):
-        r'^\#\ (?=\S)'
+        r'^\#\ '
         self.log.debug('Num bullet: [%s]' % (t.value))
         return t
     
     # drugi poziom wypunktowania
     def t_INITIAL_NUM_BULLET2(self, t):
-        r'^\#(\#)+\ (?=\S)'
+        r'^\#(\#)+\ '
         self.log.debug('Num bullet II: [%s]' % (t.value))
         return t
 
@@ -197,19 +200,25 @@ class TextileToHTML(Translator):
     # --- NOWE LINIE
 
     # 1 znak nowej linii - może pojawić się w ramach akapitu
-    t_NEWLINE = '\\n'
+    def t_ANY_NEWLINE(self, t):
+        '\\n'
+        self.log.debug('NEWLINE');
+        return t
 
-    # 2 lub więcej znaków nowej linii - oddziela akapit
-    t_PAREND = '(\\n\\s*){2,}'
+#    # 2 lub więcej znaków nowej linii - oddziela akapit
+#    def t_INITIAL_bs_is_us_PAREND(self, t):
+#        '(\\n\\s*){2,}'
+#        self.log.debug('PAREND')
+#        return t
     
     def t_ANY_WHITESPACE(self, t):
         r'[ \t\r\f\v]+'
         self.log.debug('whitespace')
     
-    # ========================    
+    # ========================
     # PARSER    
-    # ========================    
-    
+    # ========================
+
     # === document ===
     
     # Dokument z wieloma akapitami
@@ -228,11 +237,15 @@ class TextileToHTML(Translator):
         p[0] =  p[1]
     
     # blok: różne
+    # parend na końcu - zezwolenie na dowolne przerwy po blokach
     def p_block(self, p):
         '''
         block    : heading
+                    | heading eat_lines
                     | list1
+                    | list1 eat_lines
                     | enum1
+                    | enum1 eat_lines
         '''
         self.log.debug('block: %s' % (p[1]))
         p[0] = p[1]
@@ -241,20 +254,22 @@ class TextileToHTML(Translator):
     # akapit oddzielony od dołu
     def p_block_par(self, p):
         '''
-        block    : paragraph PAREND
+        block    : paragraph parend
         '''
         self.log.debug('block: par %s' % (p[1]))
         p[0] = '<p>%s</p>' % (p[1])
 
-    # akapit, po którym od razu następuje nagłówek
-    def p_block_par_head(self, p):
-        '''
-        block    : paragraph heading
-                | paragraph list1
-                | paragraph enum1
-        '''
-        self.log.debug('block: par (%s) other (%s)' %(p[1], p[2]))
-        p[0] = '<p>%s</p>\n%s' % (p[1], p[2])
+        # Poniższa możliwość wyłączona w Textile.
+        # Niektóre parsery PHP dają "popsute" wyjście w takim przypadku.
+#    # akapit, po którym od razu następuje nagłówek lub lista
+#    def p_block_par_head(self, p):
+#        '''
+#        block    : paragraph heading
+#                | paragraph list1
+#                | paragraph enum1
+#        '''
+#        self.log.debug('block: par (%s) other (%s)' %(p[1], p[2]))
+#        p[0] = '<p>%s</p>\n%s' % (p[1], p[2])
 
     # === lista ===
     
@@ -265,11 +280,12 @@ class TextileToHTML(Translator):
         list1    : list_pos1
         list2    : list_pos2
         '''
+        self.log.debug('list#: list_pos# (%s)' % (p[1]))
         p[0] = '<ul>%s</ul>' % (p[1])
 
     # Pozycja listy.
     # Dla I poziomu: albo kolejna pozycja zwykła, albo zagnieżdżona lista
-    # Dla II poziomu: tylko kolejna pozycja zwykła
+    # Dla II poziomu: tylko kolejna pozycja zwykła-
     def p_list_pos(self, p):
         '''
         list_pos1    : list_pos1 list_content1
@@ -277,6 +293,7 @@ class TextileToHTML(Translator):
                         | list_pos1 enum2
         list_pos2    : list_pos2 list_content2
         '''
+        self.log.debug('list_pos#: list_pos# (%s) list_content/list/enum (%s)' % (p[1], p[2]))
         p[0] = '%s\n%s' % (p[1], p[2])
 
     # Pojedyncza pozycja listy, podobnie jak w p_list_pos.
@@ -287,14 +304,16 @@ class TextileToHTML(Translator):
                         | enum2
         list_pos2    : list_content2
         '''
+        self.log.debug('list_pos# single: list_content/list/enum (%s)' % (p[1]))
         p[0] = p[1]
 
     # Zwykła zawartość pozycji listy: punkt odpowiedniego poziomu i treść
     def p_list_content(self, p):
         '''
-        list_content1    : BULLET1 paragraph
-        list_content2    : BULLET2 paragraph
+        list_content1    : BULLET1 line_content NEWLINE
+        list_content2    : BULLET2 line_content NEWLINE
         '''
+        self.log.debug('list_content#: BULLET line_content (%s) NEWLINE' % (p[2]))
         p[0] = '<li>%s</li>' % (p[2])
 
     # === lista numerowana ===
@@ -333,8 +352,8 @@ class TextileToHTML(Translator):
     # Zwykła zawartość pozycji enumy: punkt odpowiedniego poziomu i treść
     def p_enum_content(self, p):
         '''
-        enum_content1    : NUM_BULLET1 paragraph
-        enum_content2    : NUM_BULLET2 paragraph
+        enum_content1    : NUM_BULLET1 line_content NEWLINE
+        enum_content2    : NUM_BULLET2 line_content NEWLINE
         '''
         p[0] = '<li>%s</li>' % (p[2])
 
@@ -391,20 +410,13 @@ class TextileToHTML(Translator):
         '''
         self.log.debug('lc (single) %s' % (p[1]))
         p[0] = p[1]
-        
-    # Pusta linia - może pojawić się na końcu pliku
-    def p_line_content_blank(self, p):
-        '''
-        line_content    : 
-        '''
-        self.log.debug('lc BLANK')
-        p[0] = ''
+    
     
     # --- nagłówki ---    
     
     def p_heading(self, p):
         '''
-        heading    : HEADING_S multiline
+        heading    : HEADING_S multiline parend
         '''
         p[0] = r'<%s>%s</%s>' % (p[1], p[2], p[1])
     
@@ -432,6 +444,7 @@ class TextileToHTML(Translator):
         bold_end    : BOLD_E
                     | BOLD_E_E
         '''
+        p[0] = p[1]
 
     def p_italic(self, p):
         '''
@@ -473,3 +486,32 @@ class TextileToHTML(Translator):
         '''
         self.log.debug('plain: WORD (%s)' % p[1])
         p[0] = p[1]
+        
+    # === paragraph end ===    
+        
+    def p_parend(self, p):
+        '''
+        parend    : parend NEWLINE
+        '''
+        p[0] = ''
+    
+    def p_parend_single(self, p):
+        '''
+        parend    : NEWLINE NEWLINE
+        '''
+        p[0] = ''
+    
+    # === "zjadanie pustych linii" ===
+    
+    def p_eat_line(self, p):
+        '''
+        eat_lines   : eat_lines NEWLINE
+        '''
+        p[0] = ''
+        
+    def p_eat_line_single(self, p):
+        '''
+        eat_lines    : NEWLINE
+        '''
+        p[0] = 0
+    

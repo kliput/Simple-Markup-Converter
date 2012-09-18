@@ -211,8 +211,7 @@ class SimpleMarkupConverterTests(unittest.TestCase):
 
     # === Textile ===
     
-    # formatowanie zagnieżdżone (bold<-italic)
-    def test_textile_formats1(self):
+    def test_textile_par1(self):
         smc = SimpleMarkupConverter(input='**lorem __ipsum sit__ dolor** +amet+',
                                     input_t='textile', output_t='html')
         self.assertEqual(smc.parse(), Exit.SUCCESS)
@@ -229,10 +228,41 @@ class SimpleMarkupConverterTests(unittest.TestCase):
                                 rx.findall(smc.get_output())
                                 ))
     
+    # formatowanie zagnieżdżone (bold<-italic)
+    def test_textile_formats1(self):
+        text = '''
+Pierwszy akapit
+
+Drugi
+wieloliniowy
+akapit
+
+
+
+Po przerwie
+'''
+        smc = SimpleMarkupConverter(input=text,
+                                    input_t='textile', output_t='html')
+        self.assertEqual(smc.parse(), Exit.SUCCESS)
+
+        print(smc.get_output())
+        
+        rx = re.compile(r'''
+\<p\>\s*Pierwszy\s+akapit\s*\<\/p\>\s*
+\<p\>\s*Drugi\s*\<br\/\>\s*wieloliniowy\s*\<br\/\>\s*akapit\s*\<\/p\>\s*
+\<p\>\s*Po\s+przerwie\s*\<\/p\>
+        ''', re.VERBOSE)
+        self.assertEqual(1, len(
+                                rx.findall(smc.get_output())
+                                ))
+    
     def test_textile_headers(self):
         text = '''
 h1. Lorem
 ipsum
+
+Some multiline
+paragraph
 
 h2. Sit dolor
 
@@ -267,6 +297,33 @@ h2. Sit dolor
                                 
         self.assertEqual(1, len(
                                 r3.findall(smc.get_output())
+                                ))
+
+    # lista wypunktowana zagnieżdżona
+    def test_textile_lists1(self):
+        text = '''
+* Lorem
+* Ipsum sit
+** Dolor amet
+** Lorem ipsum
+* Sit dolor
+'''
+        smc = SimpleMarkupConverter(input=text,
+                                    input_t='textile', output_t='html')
+        self.assertEqual(smc.parse(), Exit.SUCCESS)
+
+        print(smc.get_output())
+        
+        rx = re.compile(r'''
+\<ul\>\s*\<li\>\s*Lorem\s*\<\/li\>\s*
+\<li\>\s*Ipsum\s+sit\s*\<\/li\>\s*
+\<ul\>\s*\<li\>\s*Dolor\s+amet\s*\<\/li\>\s*
+\<li\>\s*Lorem\s+ipsum\s*\<\/li\>\s*\<\/ul\>\s*
+\<li\>\s*Sit\s+dolor\s*\<\/li\>\s*\<\/ul\>
+
+        ''', re.VERBOSE)
+        self.assertEqual(1, len(
+                                rx.findall(smc.get_output())
                                 ))
 
 if __name__ == '__main__':
