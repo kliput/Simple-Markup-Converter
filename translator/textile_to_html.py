@@ -41,109 +41,8 @@ class TextileToHTML(Translator):
     
 #    t_ignore = r'\ \t'
     
-    # ------ tagi startujące formatowanie ------
-    
-    # Te tagi powinny być dostępne we wszystkich trybach oprócz tagend. 
-    
-    # Znacznik rozpoczynający pogrubienie: **<znak>
-    # Może być wykryte tylko w stanie, gdy nie rozpoczęliśmy znacznika bold
-    # (w obecnym zagnieżdżeniu)
-    # TODO dodawać możliwe wszystkie stany inclusive
-    def t_INITIAL_is_us_BOLD_S(self, t):
-        r'\*\*(?=[^\s])'
-        # dorzucenie stanu otwartego bold
-        t.lexer.push_state('bs')
-        self.log.debug('BOLD_S token: ' + t.value)
-        return t
-    
-    # znacznik rozpoczynający kursywę: //<znak>
-    # TODO dodawać możliwe wszystkie stany inclusive
-    def t_INITIAL_bs_us_ITALIC_S(self, t):
-        r'\_\_(?=[^\s])'
-        # dorzucenie stanu otwartego italic
-        t.lexer.push_state('is')
-        self.log.debug('ITALIC_S token: ' + t.value)
-        return t
-    
-    def t_INITIAL_bs_is_UNDERLINE_S(self, t):
-        r'\+(?=[^\s])'
-        t.lexer.push_state('us')
-        self.log.debug('UNDERLINE_S token: ' + t.value)
-        return t
-    
-    # ------ tagi kończące formatowanie ------
-    
-    # --- BOLD ---
-    
-    # koniec bold, ale także koniec innego znacznika 
-    # **// **__
-    def t_tagend_BOLD_E_E(self, t):
-        r'\*\*(?=\/\/|\_\_)'
-        self.log.debug('t_be_BOLD_E_E: ' + t.value)
-        t.lexer.pop_state() # tag end
-        t.lexer.pop_state() # tag start
-        t.lexer.push_state('tagend')
-        return t
-
-    # Znacznik kończący bold, musi go poprzedzać jakiś znak.
-    # Nie można wykonać "positive lookbehind" gdyż poprzedni znak należy
-    # do jakiegoś innego tokena. W tym celu używa się flagi format['bold'].  
-    def t_tagend_BOLD_E(self, t):
-        r'\*\*'
-        self.log.debug('**<- ' + str(t.lexer.lexstatestack))
-        # zdjęcie stanu tagend - koniec bold
-        t.lexer.pop_state()
-        t.lexer.pop_state() # tag start
-        self.log.debug('t_be_BOLD_E: ' + t.value)
-        return t
-
-    # --- ITALIC ---
-
-    # __+ __**
-    def t_tagend_ITALIC_E_E(self, t):
-        r'\_\_(?=\+|\*\*)'
-        t.lexer.pop_state() # tag end
-        t.lexer.pop_state() # tag start
-        t.lexer.push_state('tagend')
-        return t
-
-    # Analogicznie do t_tagend_BOLD_E
-    def t_tagend_ITALIC_E(self, t):
-        r'\_\_'
-        # zdjęcie stanu ie - koniec italic
-        t.lexer.pop_state()
-        t.lexer.pop_state() # tag start
-        self.log.debug('t_ie_ITALIC_E: ' + t.value)
-        return t
-    
-    # --- UNDERLINE ---
-
-    # +// +**
-    def t_tagend_UNDERLINE_E_E(self, t):
-        r'\+(?=\_\_|\*\*)'
-        t.lexer.pop_state() # tag end
-        t.lexer.pop_state() # tag start
-        t.lexer.push_state('tagend')
-        return t
-
-    # Analogicznie do t_tagend_BOLD_E
-    def t_tagend_UNDERLINE_E(self, t):
-        r'\+'
-        t.lexer.pop_state()
-        t.lexer.pop_state()
-        return t
-
-    # --- HEADING ---
-
-    # np.: h1. Nagłówek
-    def t_HEADING_S(self, t):
-        r'^h\d\.\ '
-        lvl = re.match(r'h(\d)\.\ ', t.value).group(1)
-        t.value = 'h%s' % lvl
-        self.log.debug('Heading start level: %s' % (lvl))
-        return t
-    
     # --- WYPUNKTOWANIE ---
+    # Definiowane wcześniej, gdyż ma pierwszeństwo nad tagami formatowania
     
     # wg specyfikacji po - musi wystąpić dokładnie jedna spacja po *
     # nie jest wymagany znak drukowalny w linii wypunktowania
@@ -170,6 +69,108 @@ class TextileToHTML(Translator):
         r'^\#(\#)+\ '
         self.log.debug('Num bullet II: [%s]' % (t.value))
         return t
+    
+    # ------ tagi startujące formatowanie ------
+    
+    # Te tagi powinny być dostępne we wszystkich trybach oprócz tagend. 
+    
+    # Znacznik rozpoczynający pogrubienie: **<znak>
+    # Może być wykryte tylko w stanie, gdy nie rozpoczęliśmy znacznika bold
+    # (w obecnym zagnieżdżeniu)
+    # TODO dodawać możliwe wszystkie stany inclusive
+    def t_INITIAL_is_us_BOLD_S(self, t):
+        r'\*(?=[^\s])'
+        # dorzucenie stanu otwartego bold
+        t.lexer.push_state('bs')
+        self.log.debug('BOLD_S token: ' + t.value)
+        return t
+    
+    # znacznik rozpoczynający kursywę: //<znak>
+    # TODO dodawać możliwe wszystkie stany inclusive
+    def t_INITIAL_bs_us_ITALIC_S(self, t):
+        r'\_(?=[^\s])'
+        # dorzucenie stanu otwartego italic
+        t.lexer.push_state('is')
+        self.log.debug('ITALIC_S token: ' + t.value)
+        return t
+    
+    def t_INITIAL_bs_is_UNDERLINE_S(self, t):
+        r'\+(?=[^\s])'
+        t.lexer.push_state('us')
+        self.log.debug('UNDERLINE_S token: ' + t.value)
+        return t
+    
+    # ------ tagi kończące formatowanie ------
+    
+    # --- BOLD ---
+    
+    # koniec bold, ale także koniec innego znacznika 
+    # **// **__
+    def t_tagend_BOLD_E_E(self, t):
+        r'\*(?=\+|\_)'
+        self.log.debug('t_be_BOLD_E_E: ' + t.value)
+        t.lexer.pop_state() # tag end
+        t.lexer.pop_state() # tag start
+        t.lexer.push_state('tagend')
+        return t
+
+    # Znacznik kończący bold, musi go poprzedzać jakiś znak.
+    # Nie można wykonać "positive lookbehind" gdyż poprzedni znak należy
+    # do jakiegoś innego tokena. W tym celu używa się flagi format['bold'].  
+    def t_tagend_BOLD_E(self, t):
+        r'\*'
+        self.log.debug('*<- ' + str(t.lexer.lexstatestack))
+        # zdjęcie stanu tagend - koniec bold
+        t.lexer.pop_state()
+        t.lexer.pop_state() # tag start
+        self.log.debug('t_be_BOLD_E: ' + t.value)
+        return t
+
+    # --- ITALIC ---
+
+    # _+ _**
+    def t_tagend_ITALIC_E_E(self, t):
+        r'\_(?=\+|\*)'
+        t.lexer.pop_state() # tag end
+        t.lexer.pop_state() # tag start
+        t.lexer.push_state('tagend')
+        return t
+
+    # Analogicznie do t_tagend_BOLD_E
+    def t_tagend_ITALIC_E(self, t):
+        r'\_'
+        # zdjęcie stanu ie - koniec italic
+        t.lexer.pop_state()
+        t.lexer.pop_state() # tag start
+        self.log.debug('t_ie_ITALIC_E: ' + t.value)
+        return t
+    
+    # --- UNDERLINE ---
+
+    # +// +**
+    def t_tagend_UNDERLINE_E_E(self, t):
+        r'\+(?=\_|\*)'
+        t.lexer.pop_state() # tag end
+        t.lexer.pop_state() # tag start
+        t.lexer.push_state('tagend')
+        return t
+
+    # Analogicznie do t_tagend_BOLD_E
+    def t_tagend_UNDERLINE_E(self, t):
+        r'\+'
+        t.lexer.pop_state()
+        t.lexer.pop_state()
+        return t
+
+    # --- HEADING ---
+
+    # np.: h1. Nagłówek
+    def t_HEADING_S(self, t):
+        r'^h\d\.\ '
+        lvl = re.match(r'h(\d)\.\ ', t.value).group(1)
+        t.value = 'h%s' % lvl
+        self.log.debug('Heading start level: %s' % (lvl))
+        return t
 
 
     # --- WORD ---
@@ -179,7 +180,7 @@ class TextileToHTML(Translator):
     # Znaków taga nie bierzemy do wyniku wyrażenia regularnego
     # - będą użyte przy pobraniu taga zamykającego.
     def t_bs_is_us_WORD(self, t):
-        r'[^\s]+?(?=(\*\*)|(\+)|(\_\_))'
+        r'[^\s]+?(?=(\*)|(\+)|(\_))'
         # lexer gotowy na pobranie znaków zamykających bold
         t.lexer.push_state('tagend')
         self.log.debug('WORD ending tag token: ' + t.value)

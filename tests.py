@@ -211,8 +211,8 @@ class SimpleMarkupConverterTests(unittest.TestCase):
 
     # === Textile ===
     
-    def test_textile_par1(self):
-        smc = SimpleMarkupConverter(input='**lorem __ipsum sit__ dolor** +amet+',
+    def test_textile_formats1(self):
+        smc = SimpleMarkupConverter(input='*lorem _ipsum sit_ dolor* +amet+',
                                     input_t='textile', output_t='html')
         self.assertEqual(smc.parse(), Exit.SUCCESS)
 
@@ -229,7 +229,7 @@ class SimpleMarkupConverterTests(unittest.TestCase):
                                 ))
     
     # formatowanie zagnieżdżone (bold<-italic)
-    def test_textile_formats1(self):
+    def test_textile_par1(self):
         text = '''
 Pierwszy akapit
 
