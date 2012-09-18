@@ -49,7 +49,7 @@ class SimpleMarkupConverterTests(unittest.TestCase):
         smc.parse()
         # poprawne wyjście - konwersja tagów jeden raz
         self.assertEqual(1, len(
-                                re.findall(r'\<b\>\s*ipsum\s*sit\s*\<\/b\>', 
+                                re.findall(r'\<b\>\s*ipsum\s*sit\s*\<\/b\>',
                                            smc.get_output())))
 
     def test_t2t_bold2(self):
@@ -65,7 +65,7 @@ class SimpleMarkupConverterTests(unittest.TestCase):
         smc.parse()
         # jeden zakres bold ipsum-dolor
         self.assertEqual(1, len(
-                                re.findall(r'\<b\>\s*ipsum\s*sit\s*\*\*\s*dolor\s*\<\/b\>', 
+                                re.findall(r'\<b\>\s*ipsum\s*sit\s*\*\*\s*dolor\s*\<\/b\>',
                                            smc.get_output())))
 
     def test_t2t_bold4(self):
@@ -74,10 +74,10 @@ class SimpleMarkupConverterTests(unittest.TestCase):
         smc.parse()
         # 2 zakresy bold
         self.assertEqual(1, len(
-                                re.findall(r'\<b\>\s*lorem\s*ipsum\s*\<\/b\>', 
+                                re.findall(r'\<b\>\s*lorem\s*ipsum\s*\<\/b\>',
                                            smc.get_output())))
         self.assertEqual(1, len(
-                                re.findall(r'\<b\>\s*sit\s*dolor\s*\<\/b\>', 
+                                re.findall(r'\<b\>\s*sit\s*dolor\s*\<\/b\>',
                                            smc.get_output())))
 
     # formatowanie zagnieżdżone (bold<-italic)
@@ -87,7 +87,7 @@ class SimpleMarkupConverterTests(unittest.TestCase):
         smc.parse()
         rx = re.compile(r'''
         \<b\> \s* lorem \s* \<i\> \s* ipsum \s* sit \s* \<\/i\> \s* dolor \s* \<\/b\> \s* amet 
-        ''',  re.VERBOSE)
+        ''', re.VERBOSE)
         self.assertEqual(1, len(
                                 rx.findall(smc.get_output())
                                 ))
@@ -99,7 +99,7 @@ class SimpleMarkupConverterTests(unittest.TestCase):
         smc.parse()
         rx = re.compile(r'''
         \<b\>\s*lorem \s*\<u\>\s*\<i\>\s*ipsum\s*\<\/i\> \s*sit \s*dolor\s*\<\/\u\>\s*\<\/b\>\s* amet
-        ''',  re.VERBOSE)
+        ''', re.VERBOSE)
         self.assertEqual(1, len(
                                 rx.findall(smc.get_output())
                                 ))
@@ -111,7 +111,7 @@ class SimpleMarkupConverterTests(unittest.TestCase):
         smc.parse()
         rx = re.compile(r'''
         \<h1\>\s*sit\s*dolor\s*\<\/h1\>
-        ''',  re.VERBOSE)
+        ''', re.VERBOSE)
         self.assertEqual(1, len(
                                 rx.findall(smc.get_output())
                                 ))
@@ -224,11 +224,50 @@ class SimpleMarkupConverterTests(unittest.TestCase):
         \<i\> \s* ipsum \s* sit \s* \<\/i\>
         \s* dolor \s* \<\/b\>
         \s* \<u\>amet\<\/u\> 
-        ''',  re.VERBOSE)
+        ''', re.VERBOSE)
         self.assertEqual(1, len(
                                 rx.findall(smc.get_output())
                                 ))
     
+    def test_textile_headers(self):
+        text = '''
+h1. Lorem
+ipsum
+
+h2. Sit dolor
+
+ h3. Amet
+        '''
+    
+        smc = SimpleMarkupConverter(input=text,
+                                    input_t='textile', output_t='html')
+        self.assertEqual(smc.parse(), Exit.SUCCESS)
+        
+        print(smc.get_output())
+        
+        r1 = re.compile(r'''
+        \<h1\>\s*Lorem\s+ipsum\s*\<\/h1\>
+        ''', re.VERBOSE)
+        
+        r2 = re.compile(r'''
+        \<h2\>\s*Sit\s+dolor\s*\<\/h2\>
+        ''', re.VERBOSE)
+        
+        # spacja przed h3. wyłącza wykrywanie nagłówka
+        r3 = re.compile(r'''
+        h3\.\s+Amet
+        ''', re.VERBOSE)
+        
+        self.assertEqual(1, len(
+                                r1.findall(smc.get_output())
+                                ))
+        self.assertEqual(1, len(
+                                r2.findall(smc.get_output())
+                                ))
+                                
+        self.assertEqual(1, len(
+                                r3.findall(smc.get_output())
+                                ))
 
 if __name__ == '__main__':
     unittest.main()

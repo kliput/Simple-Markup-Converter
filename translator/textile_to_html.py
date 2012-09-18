@@ -146,25 +146,25 @@ class TextileToHTML(Translator):
     
     # wg specyfikacji po - musi wystąpić dokładnie jedna spacja po -
     def t_INITIAL_BULLET1(self, t):
-        r'^-\ (?=\S)'
+        r'^\*\ (?=\S)'
         self.log.debug('Bullet: [%s]' % (t.value))
         return t
     
     # drugi poziom wypunktowania
     def t_INITIAL_BULLET2(self, t):
-        r'^(\ )+-\ (?=\S)'
+        r'^\*(\*)+\ (?=\S)'
         self.log.debug('Bullet II: [%s]' % (t.value))
         return t
     
     # wg specyfikacji po - musi wystąpić dokładnie jedna spacja po -
     def t_INITIAL_NUM_BULLET1(self, t):
-        r'^\+\ (?=\S)'
+        r'^\#\ (?=\S)'
         self.log.debug('Num bullet: [%s]' % (t.value))
         return t
     
     # drugi poziom wypunktowania
     def t_INITIAL_NUM_BULLET2(self, t):
-        r'^(\ )+\+\ (?=\S)'
+        r'^\#(\#)+\ (?=\S)'
         self.log.debug('Num bullet II: [%s]' % (t.value))
         return t
 
@@ -357,7 +357,25 @@ class TextileToHTML(Translator):
         '''
         self.log.debug('pc: pc %s NL lc %s' % (p[1], p[3]))
         p[0] = p[1] + ' <br/> ' + p[3]
+    
+    # specjalnie na potrzeby ignorowania nowych linii w tworzeniu nagłówka
+    # produkcja multiline
+    
+    def p_multiline(self, p):
+        '''
+        multiline   : line_content
+        '''
+        self.log.debug('multiline: lc %s' % (p[1]))
+        p[0] = p[1]
         
+    def p_multiline_wnl(self, p):
+        '''
+        multiline   : multiline NEWLINE line_content
+        '''
+        self.log.debug('multiline: multiline %s NL lc %s' % (p[1], p[3]))
+        p[0] = p[1] + '\n' + p[3]
+    
+    
     # Zawartość pojedynczej linii (wiele elementów)
     def p_line_content(self, p):
         '''
@@ -386,7 +404,7 @@ class TextileToHTML(Translator):
     
     def p_heading(self, p):
         '''
-        heading    : HEADING_S paragraph
+        heading    : HEADING_S multiline
         '''
         p[0] = r'<%s>%s</%s>' % (p[1], p[2], p[1])
     
