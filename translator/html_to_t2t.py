@@ -18,8 +18,26 @@ class HtmlToTxt2Tags(Translator):
     # aktualny poziom wcięcia listy
     indent_lvl = -1
     
+    # Jeśli jest to pierwsze wejście do <ul>, zwiększa natychmiast,
+    # jeśli nie - będzie oczekiwać na wywołanie change_indent
+    def delay_inc_indent(self):
+        if self.indent_lvl == -1:
+            self.indent_lvl += 1
+        else:
+            self.indent_next = 1
+        
+    # Jeśli jest to ostatnie wyjście z </ul>, zmniejsza natychmiast,
+    # jeśli nie - będzie oczekiwać na wywołanie change_indent
+    def delay_dec_indent(self):
+        if self.indent_lvl == 0:
+            self.indent_lvl -= 1
+        else:
+            self.indent_next = -1
+        
+    
     # zmiana aktualnego poziomu wcięcia
     def change_indent(self):
+        self.log.debug('change_indent: %s -> %s' % (self.indent_lvl, self.indent_lvl+self.indent_next))
         self.indent_lvl += self.indent_next
         self.indent_next = 0
 
@@ -183,14 +201,14 @@ class HtmlToTxt2Tags(Translator):
     def t_INITIAL_ul_ol_UL_S(self, t):
         r'\<ul\>'
         t.lexer.push_state('ul')
-        self.indent_next = 1
+        self.delay_inc_indent()
         self.log.debug(r'<ul>')
         return t
 
     def t_ul_UL_E(self, t):
         r'\<\/ul\>'
         t.lexer.pop_state()
-        self.indent_next = -1
+        self.delay_dec_indent()
         self.log.debug(r'</ul>')
         return t
 
@@ -199,14 +217,14 @@ class HtmlToTxt2Tags(Translator):
     def t_INITIAL_ul_ol_OL_S(self, t):
         r'\<ol\>'
         t.lexer.push_state('ol')
-        self.indent_next = 1
+        self.delay_inc_indent()
         self.log.debug(r'<ol>')
         return t
 
     def t_ol_OL_E(self, t):
         r'\<\/ol\>'
         t.lexer.pop_state()
-        self.indent_next = -1
+        self.delay_dec_indent()
         self.log.debug(r'</ol>')
         return t
 
@@ -297,7 +315,7 @@ class HtmlToTxt2Tags(Translator):
         '''
         content   : element
         '''
-        self.log.debug('cont: element (%s)' % (p[1]))
+        self.log.debug('content: (single) element (%s)' % (p[1]))
         p[0] = p[1]
         
     def p_element(self, p):
