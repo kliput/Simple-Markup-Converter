@@ -97,7 +97,7 @@ class HtmlToTxt2Tags(Translator):
     # <br/>
     def t_ANY_BR(self, t):
         r'\<br\/\>'
-        t.value = r'\\'
+        t.value = r'\\' + '\n'
         return t
     
     # <p>

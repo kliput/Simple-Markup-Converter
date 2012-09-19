@@ -1,27 +1,3 @@
-<ul>
-	<li>a</li>
-	<ul>
-        <li>a1</li>
-        <li>a2</li>
-        <li>a3</li>
-	</ul>
-	<li>b</li>
-	<li>c</li>
-	<ul>
-        <li>c1</li>
-        <li>c2</li>
-        <li>c3</li>
-    </ul>
-
-</ul>
-
-<ol>
-	<li>1</li>
-	<li>2</li>
-	<ul>
-        <li>21</li>
-        <li>22</li>
-        <li>33</li>
-    </ul>
-	<li>3</li>
-</ol>
+jedna linia\\
+druga linia \\  
+trzecia \\ linia

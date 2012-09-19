@@ -216,7 +216,7 @@ class Txt2TagsToHTML(Translator):
 
     # łamanie linii
     def t_ANY_break_BREAKLINE(self, t):
-        r'\\\\'
+        r'\\\\\s*\n'
         self.log.debug('BREAKLINE')
         t.value = r'<br/>'
         return t
