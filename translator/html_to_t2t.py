@@ -17,21 +17,28 @@ class HtmlToTxt2Tags(Translator):
     indent_next = 0
     # aktualny poziom wcięcia listy
     indent_lvl = -1
+    # czy to koniec glównego bloku listy
+    list_final = False
     
     # Jeśli jest to pierwsze wejście do <ul>, zwiększa natychmiast,
     # jeśli nie - będzie oczekiwać na wywołanie change_indent
     def delay_inc_indent(self):
         if self.indent_lvl == -1:
+            self.log.debug('first inc indent')
             self.indent_lvl += 1
         else:
+            self.log.debug('next inc indent')
             self.indent_next = 1
         
     # Jeśli jest to ostatnie wyjście z </ul>, zmniejsza natychmiast,
     # jeśli nie - będzie oczekiwać na wywołanie change_indent
     def delay_dec_indent(self):
         if self.indent_lvl == 0:
+            self.log.debug('last dec indent')
             self.indent_lvl -= 1
+            self.list_final = True
         else:
+            self.log.debug('next dec indent')
             self.indent_next = -1
         
     
@@ -376,10 +383,11 @@ class HtmlToTxt2Tags(Translator):
         list    : UL_S list_content UL_E
         '''
         self.log.debug(r'list <ul> list_content (%s) </ul> lvl %s' % (p[2], self.indent_lvl))
-        if self.indent_lvl > -1: # koniec poziomu na liście
+        if self.list_final: # koniec całej listy
+            p[0] = '%s\n\n\n' % (p[2])
+            self.list_final = False
+        else: # koniec poziomu na liście
             p[0] = '%s' % (p[2])
-        else:
-            p[0] = '%s\n\n\n' % (p[2]) # koniec całej listy
         
     def p_list_content(self, p):
         '''
@@ -419,10 +427,11 @@ class HtmlToTxt2Tags(Translator):
         enum    : OL_S enum_content OL_E
         '''
         self.log.debug(r'enum <ol> enum_content (%s) </ol>' % (p[2]))
-        if self.indent_lvl > -1: # koniec poziomu na liście
+        if self.list_final: # koniec całej listy
+            p[0] = '%s\n\n\n' % (p[2])
+            self.list_final = False
+        else: # koniec poziomu na liście
             p[0] = '%s' % (p[2])
-        else:
-            p[0] = '%s\n\n\n' % (p[2]) # koniec całej listy
         
     def p_enum_content(self, p):
         '''
