@@ -1,0 +1,47 @@
+h1. Textile
+
+*Textile* jest _jezykiem *znacznikow*_ przystosowanym do +formatowania _tekstow_ dla stron WWW.+
+
+h2. Lamanie
+linii
+
+*Litwo!* Ojczyzno moja! Ty jestes jak zdrowie;
+Ile cie trzeba cenic, ten tylko sie dowie,
+Kto cie stracil. Dzis pieknosc twa w calej ozdobie
+Widze i opisuje, bo tesknie po Tobie.
+
+h2. Listy
+
+h3. Lista wypunktowana
+
+* Jeden
+* Dwa
+** Dwadziescia jeden
+** Dwadziescia dwa
+* Trzy
+
+h3. Lista numerowana
+
+# Pierwszy
+# Drugi
+## Dwudziesty drugi
+## Dwudziesty trzeci
+# Trzeci
+
+h3. Listy mieszane
+
+# Po pierwsze
+** Przedstawiam listy numerowane
+** Z wieloma pozycjami
+# Po drugie
+## Ta lista
+## Jest numerowana wewnetrznie
+
+* Oto zwykla lista
+## Podlista numerowana
+## Kolejna pozycjam
+* Powrot do poziomu 1
+** _Poziom 2_
+** *+Tagi zagniezdzone+*
+
+_Dziekuje *serdecznie* za uwage!_

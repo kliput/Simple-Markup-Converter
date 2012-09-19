@@ -2,5 +2,6 @@ eclipse.preferences.version=1
 encoding//translator/dummy.py=utf-8
 encoding//translator/example_translator.py=utf-8
 encoding//translator/html_to_t2t.py=utf-8
+encoding//translator/html_to_textile.py=utf-8
 encoding//translator/translator.py=utf-8
 encoding//translator/txt2tags.py=utf-8
