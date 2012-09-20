@@ -23,6 +23,8 @@ from translator.txt2tags import Txt2TagsToHTML
 from translator.html_to_t2t import HtmlToTxt2Tags
 from translator.textile_to_html import TextileToHTML
 from translator.html_to_textile import HtmlToTextile
+from translator.dokuwiki_to_html import DokuWikiToHTML
+from translator.html_to_dokuwiki import HtmlToDokuWiki
 import argparse
 import logging
 
@@ -56,7 +58,9 @@ class SimpleMarkupConverter(object):
                       "txt2tags":
                       {IN: Txt2TagsToHTML, OUT: HtmlToTxt2Tags},
                       "textile":
-                      {IN: TextileToHTML, OUT: HtmlToTextile}
+                      {IN: TextileToHTML, OUT: HtmlToTextile},
+			"dokuwiki":
+			{IN: DokuWikiToHTML, OUT: HtmlToDokuWiki}
                     }
 
     def __init__(self, **kwargs):
